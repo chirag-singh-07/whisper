@@ -5,12 +5,14 @@ import cors from "cors";
 import { config } from "./config/env";
 import { errorHandler } from "./middlewares/error.middleware";
 
+
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import messageRoutes from "./routes/message.routes";
 import chatRoutes from "./routes/chat.routes";
 
 const app = express();
+
 
 /**
  * Security Middleware
@@ -52,6 +54,11 @@ app.get("/health", (req, res) => {
 /**
  * API Routes
  */
+
+// Serve uploaded files statically from /uploads
+import path from "path";
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
