@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { config } from "./config/env";
 import { errorHandler } from "./middlewares/error.middleware";
+import path from "path";
 
 
 import authRoutes from "./routes/auth.routes";
@@ -56,7 +57,7 @@ app.get("/health", (req, res) => {
  */
 
 // Serve uploaded files statically from /uploads
-import path from "path";
+
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 app.use("/api/auth", authRoutes);
@@ -69,5 +70,13 @@ app.use("/api/chats", chatRoutes);
  * Must be last middleware
  */
 app.use(errorHandler);
+
+// Serve frontend in production
+if(process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname, "..", "website", "dist")));
+  app.get("/{*any}", (_, res) => {
+    res.sendFile(path.join(__dirname, "..", "website", "dist", "index.html"));
+  })
+}
 
 export default app;
