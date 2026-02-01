@@ -1,16 +1,18 @@
 import rateLimit from "express-rate-limit";
+import { config } from "../config/env";
 
 /**
  * Rate limiter for login endpoint
  *
- * Limits: 5 requests per 15 minutes per IP
+ * Development: 50 requests per 15 minutes per IP
+ * Production: 5 requests per 15 minutes per IP
  *
  * Security: Prevents brute force attacks on login
  * Note: For production, consider using Redis store for distributed rate limiting
  */
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  max: config.server.isProduction ? 5 : 50, // More lenient in development
   message: {
     success: false,
     message: "Too many login attempts. Please try again after 15 minutes.",
@@ -24,13 +26,14 @@ export const loginLimiter = rateLimit({
 /**
  * Rate limiter for registration endpoint
  *
- * Limits: 3 requests per hour per IP
+ * Development: 20 requests per hour per IP
+ * Production: 3 requests per hour per IP
  *
  * Security: Prevents spam account creation
  */
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // 3 requests per window
+  max: config.server.isProduction ? 3 : 20, // More lenient in development
   message: {
     success: false,
     message: "Too many registration attempts. Please try again after an hour.",

@@ -1,0 +1,48 @@
+Login Debug Logs - 2026-02-01 19:05:26
+==========================================
+
+ISSUE: 429 Too Many Requests - Rate Limit Exceeded
+
+Console Output:
+---------------
+
+📡 Request interceptor - Token: null
+⚠️ No valid token to add to request
+
+POST http://localhost:5000/api/auth/login 429 (Too Many Requests)
+
+Stack Trace:
+dispatchXhrRequest @ axios.js?v=aee6df8b:1706
+xhr @ axios.js?v=aee6df8b:1583
+dispatchRequest @ axios.js?v=aee6df8b:2117
+Promise.then
+_request @ axios.js?v=aee6df8b:2320
+request @ axios.js?v=aee6df8b:2229
+httpMethod @ axios.js?v=aee6df8b:2366
+wrap @ axios.js?v=aee6df8b:8
+handleSubmit @ Login.jsx:42
+
+Error Details:
+❌ Response error: 429 /auth/login
+XHR failed loading: POST "http://localhost:5000/api/auth/login"
+
+Root Cause:
+-----------
+The backend rate limiter blocked the login attempt after 5 failed attempts within 15 minutes.
+This is a security feature to prevent brute force attacks.
+
+Solution Applied:
+-----------------
+1. Updated rate limits in development environment:
+   - Login: 50 attempts per 15 minutes (was 5)
+   - Register: 20 attempts per hour (was 3)
+
+2. File modified: backend/src/middlewares/rateLimit.middleware.ts
+   - Added environment-aware rate limiting
+   - Production limits remain strict for security
+
+Next Steps:
+-----------
+1. Restart the backend server to reset the rate limiter
+2. Try logging in again
+3. Monitor console for successful token storage logs

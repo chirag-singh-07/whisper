@@ -100,11 +100,12 @@ export default function Register() {
 
     try {
       const { confirmPassword, ...payload } = formData;
-      const { data } = await api.post('/auth/register', payload);
+      const { data: responseBody } = await api.post('/auth/register', payload);
+      const { tokens, ...userData } = responseBody.data;
       
-      localStorage.setItem('accessToken', data.accessToken);
-      localStorage.setItem('refreshToken', data.refreshToken);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('accessToken', tokens.accessToken);
+      localStorage.setItem('refreshToken', tokens.refreshToken);
+      localStorage.setItem('user', JSON.stringify(userData));
       
       toast.dismiss(loadingToast);
       toast.success("Welcome to Whisper!", {
@@ -129,7 +130,7 @@ export default function Register() {
          <div className="max-w-md w-full mx-auto">
             {/* Header */}
             <div className="mb-12">
-               <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-6 text-primary shadow-lg shadow-primary/10">
+               <div className="relative w-full h-[600px] rounded-[48px] overflow-hidden border border-white/10 bg-linear-to-br from-primary/20 to-secondary/20 shadow-3xl shadow-primary/10">
                   <UserPlus size={24} />
                </div>
                <h1 className="text-4xl font-black text-white tracking-tight mb-3">
@@ -234,7 +235,7 @@ export default function Register() {
                             <input 
                                type="text"
                                placeholder="I love encrypted chats"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               className="w-full h-14 pl-12 bg-white/2 border border-white/5 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
                                value={formData.about}
                                onChange={(e) => setFormData({ ...formData, about: e.target.value })}
                                autoFocus
@@ -337,11 +338,11 @@ export default function Register() {
          <div className="relative z-10 p-12 max-w-lg">
             <h2 className="text-5xl font-black text-white mb-6 leading-tight">
                Join the <br/>
-               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Revolution.</span>
+                <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-orange-400">Revolution.</span>
             </h2>
             <div className="space-y-6">
                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center flex-shrink-0 text-primary border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 text-primary border border-white/5">
                      <ShieldCheck /> 
                   </div>
                   <div>
@@ -350,7 +351,7 @@ export default function Register() {
                   </div>
                </div>
                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center flex-shrink-0 text-primary border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 text-primary border border-white/5">
                      <Zap /> 
                   </div>
                   <div>
@@ -359,7 +360,7 @@ export default function Register() {
                   </div>
                </div>
                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center flex-shrink-0 text-primary border border-white/5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center shrink-0 text-primary border border-white/5">
                      <Globe /> 
                   </div>
                   <div>

@@ -8,8 +8,12 @@ const api = axios.create({
 
 api.interceptors.request.use(async (config) => {
   const token = localStorage.getItem("accessToken");
-  if (token) {
+  console.log("📡 Request interceptor - Token:", token);
+  if (token && token !== "undefined") {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log("📡 Added Authorization header");
+  } else {
+    console.log("⚠️ No valid token to add to request");
   }
   return config;
 });
@@ -17,11 +21,32 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    console.log(
+      "❌ Response error:",
+      error.response?.status,
+      error.config?.url,
+    );
     if (error.response?.status === 401) {
-      // Could handle logout here or refresh token
+      console.log("🚨 401 Unauthorized - Clearing tokens");
       localStorage.removeItem("accessToken");
       localStorage.removeItem("user");
-      window.location.href = "/login";
+
+      // Prevent redirect loop if already on login or register page
+      const isAuthPage =
+        window.location.pathname === "/login" ||
+        window.location.pathname === "/register";
+      console.log(
+        "🔍 Current path:",
+        window.location.pathname,
+        "Is auth page?",
+        isAuthPage,
+      );
+      if (!isAuthPage) {
+        console.log("↩️ Redirecting to /login");
+        window.location.href = "/login";
+      } else {
+        console.log("⏸️ Already on auth page, skipping redirect");
+      }
     }
     return Promise.reject(error);
   },

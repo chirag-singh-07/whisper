@@ -1,0 +1,56 @@
+Login Success - 2026-02-01T13-41-40-249Z
+==================================================
+
+🔍 Full response: {
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "id": "697f5241b9514eb054cb97ec",
+    "email": "lucky@gmail.com",
+    "username": "lucky_singh",
+    "name": "Lucky SIngh",
+    "avatarUrl": "",
+    "about": "beyond",
+    "isOnline": true,
+    "lastSeen": "2026-02-01T13:41:40.121Z",
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc2OTk1NDIwMH0.gpS9L7rLgHStBiKY52W9t89ZW2_oxB5kJ7NQSE05eHU",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc3MDU1ODEwMH0.bVWkHfAfHKxLrnyhTvQlnP8RzoFd-focUwj2FKt73C8"
+    }
+  }
+}
+
+🔍 Response data: {
+  "id": "697f5241b9514eb054cb97ec",
+  "email": "lucky@gmail.com",
+  "username": "lucky_singh",
+  "name": "Lucky SIngh",
+  "avatarUrl": "",
+  "about": "beyond",
+  "isOnline": true,
+  "lastSeen": "2026-02-01T13:41:40.121Z",
+  "tokens": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc2OTk1NDIwMH0.gpS9L7rLgHStBiKY52W9t89ZW2_oxB5kJ7NQSE05eHU",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc3MDU1ODEwMH0.bVWkHfAfHKxLrnyhTvQlnP8RzoFd-focUwj2FKt73C8"
+  }
+}
+
+🔍 Extracted tokens: {
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc2OTk1NDIwMH0.gpS9L7rLgHStBiKY52W9t89ZW2_oxB5kJ7NQSE05eHU",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc3MDU1ODEwMH0.bVWkHfAfHKxLrnyhTvQlnP8RzoFd-focUwj2FKt73C8"
+}
+
+🔍 Extracted userData: {
+  "id": "697f5241b9514eb054cb97ec",
+  "email": "lucky@gmail.com",
+  "username": "lucky_singh",
+  "name": "Lucky SIngh",
+  "avatarUrl": "",
+  "about": "beyond",
+  "isOnline": true,
+  "lastSeen": "2026-02-01T13:41:40.121Z"
+}
+
+✅ Stored accessToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OTdmNTI0MWI5NTE0ZWIwNTRjYjk3ZWMiLCJpYXQiOjE3Njk5NTMzMDAsImV4cCI6MTc2OTk1NDIwMH0.gpS9L7rLgHStBiKY52W9t89ZW2_oxB5kJ7NQSE05eHU"
+
+✅ Stored user: "{\"id\":\"697f5241b9514eb054cb97ec\",\"email\":\"lucky@gmail.com\",\"username\":\"lucky_singh\",\"name\":\"Lucky SIngh\",\"avatarUrl\":\"\",\"about\":\"beyond\",\"isOnline\":true,\"lastSeen\":\"2026-02-01T13:41:40.121Z\"}"

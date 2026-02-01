@@ -395,7 +395,7 @@ export default function LandingPage() {
       </section>
 
       {/* Infinite Scroll / Social Proof */}
-      <section className="py-24 border-y border-white/5 bg-white/[0.02] overflow-hidden">
+      <section className="py-24 border-y border-white/5 bg-white/2 overflow-hidden">
         <div className="flex gap-8 animate-infinite-scroll min-w-max">
            {[...Array(2)].map((_, i) => (
               <div key={i} className="flex gap-8">
