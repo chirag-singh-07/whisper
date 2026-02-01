@@ -12,50 +12,13 @@ import ScreenWrapper from "../../components/ui/ScreenWrapper";
 import Skeleton from "../../components/ui/Skeleton";
 import { useRouter } from "expo-router";
 
-const MOCK_CHATS = [
-  {
-    id: "1",
-    name: "Sarah Wilson",
-    lastMessage: "Hey, are we still meeting today?",
-    time: "12:45 PM",
-    unreadCount: 2,
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    online: true,
-  },
-  {
-    id: "2",
-    name: "Design Team",
-    lastMessage: "The new mockups are ready for review!",
-    time: "Yesterday",
-    unreadCount: 0,
-    avatar:
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=100&h=100&fit=crop",
-    online: false,
-  },
-  {
-    id: "3",
-    name: "Michael Chen",
-    lastMessage: "Thanks for the help earlier.",
-    time: "Yesterday",
-    unreadCount: 0,
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    online: true,
-  },
-];
+import { useChats, Chat } from "../../hooks/useChats";
+import { BASE_URL } from "../../api/client";
+import { RefreshControl } from "react-native";
 
 const ChatsTab = () => {
-  const [loading, setLoading] = useState(true);
+  const { chats, loading, error, refresh } = useChats();
   const router = useRouter();
-
-  useEffect(() => {
-    // Simulate initial loading to show off premium skeletons
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
 
   const ChatSkeleton = () => (
     <View className="flex-row items-center mb-6">
@@ -70,6 +33,18 @@ const ChatsTab = () => {
     </View>
   );
 
+  const formatTime = (dateString?: string) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const getAvatarUrl = (user: any) => {
+    if (!user?.avatarUrl) return null;
+    if (user.avatarUrl.startsWith("http")) return { uri: user.avatarUrl };
+    return { uri: `${BASE_URL.replace("/api", "")}${user.avatarUrl}` };
+  };
+
   return (
     <ScreenWrapper>
       <View className="flex-1">
@@ -78,24 +53,24 @@ const ChatsTab = () => {
           <View>
             <Text className="text-white text-3xl font-bold">Chats</Text>
             <Text className="text-muted-foreground text-sm">
-              3 active conversations
+              {chats.length} active conversation{chats.length !== 1 ? "s" : ""}
             </Text>
           </View>
-          <TouchableOpacity className="w-10 h-10 rounded-full bg-surface-card border border-surface-light items-center justify-center">
+          <TouchableOpacity
+            onPress={() => router.push("/search")}
+            className="w-10 h-10 rounded-full bg-surface-card border border-surface-light items-center justify-center"
+          >
             <Ionicons name="create-outline" size={22} color="#F4A261" />
           </TouchableOpacity>
         </View>
 
-        {/* Search Bar */}
+        {/* Search Bar Placeholder */}
         <View className="px-6 mb-6">
-          <View className="flex-row items-center bg-surface-card border border-surface-light rounded-2xl h-12 px-4">
+          <View className="flex-row items-center bg-surface-card border border-surface-light rounded-2xl h-12 px-4 opacity-60">
             <Ionicons name="search-outline" size={20} color="#6B6B70" />
-            <TextInput
-              placeholder="Search messages..."
-              placeholderTextColor="#6B6B70"
-              className="flex-1 ml-3 text-white text-base"
-              editable={!loading}
-            />
+            <Text className="ml-3 text-[#6B6B70] text-base">
+              Search messages...
+            </Text>
           </View>
         </View>
 
@@ -104,35 +79,45 @@ const ChatsTab = () => {
           className="flex-1 px-6"
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={refresh}
+              tintColor="#F4A261"
+            />
+          }
         >
-          {loading
+          {loading && chats.length === 0
             ? Array(4)
                 .fill(0)
                 .map((_, i) => <ChatSkeleton key={i} />)
-            : MOCK_CHATS.map((chat) => (
+            : chats.map((chat) => (
                 <TouchableOpacity
-                  key={chat.id}
+                  key={chat._id}
                   className="flex-row items-center mb-6"
                   activeOpacity={0.7}
                   onPress={() =>
                     router.push({
                       pathname: "/chat/[id]",
                       params: {
-                        id: chat.id,
-                        name: chat.name,
-                        avatar: chat.avatar,
+                        id: chat._id,
+                        name: chat.participants.name,
+                        avatar: chat.participants.avatarUrl || "",
                       },
                     } as any)
                   }
                 >
                   {/* Avatar Container */}
                   <View className="relative">
-                    <Image
-                      source={{ uri: chat.avatar }}
-                      className="w-16 h-16 rounded-[24px]"
-                    />
-                    {chat.online && (
-                      <View className="absolute bottom-0 right-0 w-4 h-4 rounded-full bg-green-500 border-2 border-surface" />
+                    {getAvatarUrl(chat.participants) ? (
+                      <Image
+                        source={getAvatarUrl(chat.participants)!}
+                        className="w-16 h-16 rounded-[24px]"
+                      />
+                    ) : (
+                      <View className="w-16 h-16 rounded-[24px] bg-surface-card border border-surface-light items-center justify-center">
+                        <Ionicons name="person" size={28} color="#6B6B70" />
+                      </View>
                     )}
                   </View>
 
@@ -143,30 +128,45 @@ const ChatsTab = () => {
                         className="text-white text-lg font-bold"
                         numberOfLines={1}
                       >
-                        {chat.name}
+                        {chat.participants.name}
                       </Text>
                       <Text className="text-muted-foreground text-xs">
-                        {chat.time}
+                        {formatTime(chat.lastMessageAt)}
                       </Text>
                     </View>
                     <View className="flex-row justify-between items-center">
                       <Text
-                        className={`text-sm flex-1 mr-2 ${chat.unreadCount > 0 ? "text-white font-semibold" : "text-muted-foreground"}`}
+                        className="text-sm flex-1 mr-2 text-muted-foreground"
                         numberOfLines={1}
                       >
-                        {chat.lastMessage}
+                        {chat.lastMessage?.text || "New conversation"}
                       </Text>
-                      {chat.unreadCount > 0 && (
-                        <View className="bg-primary px-1.5 min-w-[20px] h-5 rounded-full items-center justify-center">
-                          <Text className="text-white text-xs font-bold">
-                            {chat.unreadCount}
-                          </Text>
-                        </View>
-                      )}
                     </View>
                   </View>
                 </TouchableOpacity>
               ))}
+
+          {!loading && chats.length === 0 && (
+            <View className="flex-1 items-center justify-center mt-20">
+              <Ionicons
+                name="chatbubble-ellipses-outline"
+                size={60}
+                color="#2D2D30"
+              />
+              <Text className="text-white text-xl font-bold mt-4">
+                No chats yet
+              </Text>
+              <Text className="text-muted-foreground text-center mt-2 px-10">
+                Search for friends to start a beautiful conversation
+              </Text>
+              <TouchableOpacity
+                onPress={() => router.push("/search")}
+                className="mt-6 bg-primary/10 border border-primary/20 px-6 py-2 rounded-full"
+              >
+                <Text className="text-primary font-bold">Find Friends</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </ScrollView>
       </View>
     </ScreenWrapper>

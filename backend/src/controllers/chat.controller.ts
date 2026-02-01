@@ -62,18 +62,29 @@ export const getChatWithParticipant = async (req: Request, res: Response) => {
     // check if chat already exists
     let chat = await ChatModel.findOne({
       participants: { $all: [userId, participantId] },
+      isGroup: false, // Ensure we don't pick up group chats
     })
       .populate("participants", "name email username avatarUrl")
       .populate("lastMessage");
-    if (chat) {
+
+    if (!chat) {
       const newChat = new ChatModel({
         participants: [userId, participantId],
+        isGroup: false,
       });
       await newChat.save();
-      chat = await ChatModel.populate(
+
+      // Re-fetch with population
+      chat = await ChatModel.findById(newChat._id).populate(
         "participants",
         "name email username avatarUrl",
       );
+    }
+
+    if (!chat) {
+      return res
+        .status(500)
+        .json({ message: "Failed to create or retrieve chat" });
     }
 
     const otherParticipant = chat.participants.find(
