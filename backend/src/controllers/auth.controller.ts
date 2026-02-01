@@ -94,6 +94,8 @@ export async function handleRegisterUser(
       password: hashedPassword,
       username: validatedData.username,
       name: validatedData.name,
+      about: validatedData.about,
+      avatarUrl: validatedData.avatarUrl,
     });
 
     // Generate tokens
@@ -118,7 +120,12 @@ export async function handleRegisterUser(
       createdAt: user.createdAt,
     };
 
-    sendSuccess(res, userResponse, "Registration successful", 201);
+    sendSuccess(
+      res,
+      { ...userResponse, tokens: { accessToken, refreshToken } },
+      "Registration successful",
+      201,
+    );
   } catch (error: any) {
     // Handle validation errors
     if (error.name === "ZodError") {
@@ -241,7 +248,12 @@ export async function handleLoginUser(
       lastSeen: user.lastSeen,
     };
 
-    sendSuccess(res, userResponse, "Login successful", 200);
+    sendSuccess(
+      res,
+      { ...userResponse, tokens: { accessToken, refreshToken } },
+      "Login successful",
+      200,
+    );
   } catch (error: any) {
     // Handle validation errors
     if (error.name === "ZodError") {

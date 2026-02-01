@@ -65,6 +65,8 @@ export const registerSchema = z.object({
     .min(1, "Name is required")
     .max(100, "Name is too long")
     .trim(),
+  about: z.string().max(500, "About must not exceed 500 characters").optional(),
+  avatarUrl: z.string().url("Invalid URL").optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

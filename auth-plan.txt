@@ -1,0 +1,30 @@
+first make the onboarding screens, and then move to authentication.
+
+on the onboarding screens, we will include a welcome message, app features overview, and a get started button.
+
+Once the onboarding is complete, we will implement the authentication screens, including sign-up and login functionalities.
+
+authentication flow : 
+1. Onboarding Screens
+   - Welcome Screen
+   - Features Overview
+   - Get Started Button
+2. Authentication Screens
+   - Sign-Up Screen
+        -> Input fields for email, password, and confirm password
+    -> Username screens
+        -> Input field for username and check availability
+    -> Profile steup screen
+        -> Input fields for profile picture upload and name
+    - Login Screen
+        -> Input fields for email and password
+    -> Forgot Password Option
+        -> Input field for email to send password reset link
+    -> Social Media Login Options (Google, Facebook, etc.)
+3. Authentication Logic
+    - Form Validation
+    - API Integration for Sign-Up and Login
+    - Error Handling and User Feedback  
+
+
+    

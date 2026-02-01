@@ -2,10 +2,12 @@ import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import { config } from "./config/env";
 import { errorHandler } from "./middlewares/error.middleware";
 import path from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
@@ -13,7 +15,6 @@ import messageRoutes from "./routes/message.routes";
 import chatRoutes from "./routes/chat.routes";
 
 const app = express();
-
 
 /**
  * Security Middleware
@@ -24,7 +25,7 @@ app.use(helmet());
 // CORS configuration
 app.use(
   cors({
-    origin: config.cors.clientUrl, // Only allow requests from client URL
+    origin: "*", // Only allow requests from client URL
     credentials: true, // Allow cookies to be sent
   }),
 );
@@ -70,13 +71,5 @@ app.use("/api/chats", chatRoutes);
  * Must be last middleware
  */
 app.use(errorHandler);
-
-// Serve frontend in production
-if(process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "..", "website", "dist")));
-  app.get("/{*any}", (_, res) => {
-    res.sendFile(path.join(__dirname, "..", "website", "dist", "index.html"));
-  })
-}
 
 export default app;
