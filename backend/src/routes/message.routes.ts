@@ -2,6 +2,8 @@ import {
   handleGetMessagesByChatId,
   handleSendMessage,
 } from "../controllers/message.controller";
+import { requireAuth } from "../middlewares/auth.middleware";
+import { Router } from "express";
 
 const router = Router();
 

@@ -5,6 +5,7 @@ import { UserPlus, User, Lock, Mail, Info, Loader2, ArrowRight, ArrowLeft, Shiel
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function Register() {
   const [step, setStep] = useState(1);
@@ -16,52 +17,106 @@ export default function Register() {
     name: '',
     about: ''
   });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const validateStep1 = () => {
+    const newErrors = {};
+    if (!formData.name.trim()) newErrors.name = "Display Name is required";
+    if (!formData.username.trim()) newErrors.username = "Username is required";
+    if (!formData.email.trim()) {
+       newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+       newErrors.email = "Please enter a valid email address";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const validateStep2 = () => {
+     const newErrors = {};
+     
+     // Password must be at least 8 characters
+     if (formData.password.length < 8) {
+        newErrors.password = "Password must be at least 8 characters";
+     }
+     // Must contain uppercase
+     else if (!/[A-Z]/.test(formData.password)) {
+        newErrors.password = "Password must contain at least one uppercase letter";
+     }
+     // Must contain lowercase
+     else if (!/[a-z]/.test(formData.password)) {
+        newErrors.password = "Password must contain at least one lowercase letter";
+     }
+     // Must contain number
+     else if (!/[0-9]/.test(formData.password)) {
+        newErrors.password = "Password must contain at least one number";
+     }
+     // Must contain special character
+     else if (!/[^A-Za-z0-9]/.test(formData.password)) {
+        newErrors.password = "Password must contain at least one special character";
+     }
+     
+     if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+     }
+     
+     setErrors(newErrors);
+     return Object.keys(newErrors).length === 0;
+  };
+
+  const clearError = (field) => {
+    if (errors[field]) {
+       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
+
   const handleNext = () => {
-    setError('');
     if (step === 1) {
-       // Step 1 Validation: Name, Username, Email
-       if (!formData.name || !formData.username || !formData.email) {
-          setError("Please fill in all required fields.");
-          return;
+       if (validateStep1()) {
+          setStep(2);
+       } else {
+          toast.error("Please fix the errors to continue");
        }
-       setStep(2);
     }
   };
 
   const handleBack = () => {
-    setError('');
+    setErrors({});
     setStep(1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     
-    // Step 2 Validation: Password Matching & Length
-    if (formData.password !== formData.confirmPassword) {
-       setError("Passwords do not match.");
-       return;
-    }
-
-    if (formData.password.length < 6) {
-       setError("Password must be at least 6 characters.");
+    if (!validateStep2()) {
+       toast.error("Please fix the errors to continue");
        return;
     }
 
     setLoading(true);
+    const loadingToast = toast.loading("Creating your secure identity...");
+
     try {
       const { confirmPassword, ...payload } = formData;
       const { data } = await api.post('/auth/register', payload);
+      
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      toast.dismiss(loadingToast);
+      toast.success("Welcome to Whisper!", {
+        description: "Your account has been successfully created."
+      });
+      
       navigate('/chat');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to register');
+      toast.dismiss(loadingToast);
+      toast.error(err.response?.data?.message || 'Registration failed', {
+        description: "Please check your details and try again."
+      });
     } finally {
       setLoading(false);
     }
@@ -98,15 +153,22 @@ export default function Register() {
                     >
                       {/* 1. Full Name */}
                       <div className="space-y-2">
-                         <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Display Name</label>
+                         <div className="flex justify-between">
+                            <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Display Name</label>
+                            {errors.name && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.name}</span>}
+                         </div>
                          <div className="relative group">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                            <User className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.name ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                             <input 
                                type="text"
                                placeholder="John Doe"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               aria-invalid={!!errors.name}
+                               className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.name ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                                value={formData.name}
-                               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                               onChange={(e) => {
+                                  setFormData({ ...formData, name: e.target.value });
+                                  clearError('name');
+                               }}
                                autoFocus
                             />
                          </div>
@@ -114,30 +176,44 @@ export default function Register() {
 
                       {/* 2. Username */}
                       <div className="space-y-2">
-                         <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Username</label>
+                         <div className="flex justify-between">
+                            <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Username</label>
+                            {errors.username && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.username}</span>}
+                         </div>
                          <div className="relative group">
-                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground font-bold group-focus-within:text-primary transition-colors text-lg">@</div>
+                            <div className={`absolute left-4 top-1/2 -translate-y-1/2 font-bold transition-colors text-lg ${errors.username ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`}>@</div>
                             <input 
                                type="text"
                                placeholder="username"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               aria-invalid={!!errors.username}
+                               className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.username ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                                value={formData.username}
-                               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                               onChange={(e) => {
+                                  setFormData({ ...formData, username: e.target.value });
+                                  clearError('username');
+                               }}
                             />
                          </div>
                       </div>
 
                       {/* 3. Email */}
                       <div className="space-y-2">
-                         <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Email</label>
+                         <div className="flex justify-between">
+                            <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Email</label>
+                            {errors.email && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.email}</span>}
+                         </div>
                          <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                            <Mail className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.email ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                             <input 
                                type="email"
                                placeholder="john@example.com"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               aria-invalid={!!errors.email}
+                               className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.email ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                                value={formData.email}
-                               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                               onChange={(e) => {
+                                  setFormData({ ...formData, email: e.target.value });
+                                  clearError('email');
+                               }}
                             />
                          </div>
                       </div>
@@ -168,42 +244,50 @@ export default function Register() {
 
                       {/* 2. Password */}
                       <div className="space-y-2">
-                         <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Password</label>
+                         <div className="flex justify-between">
+                            <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Password</label>
+                            {errors.password && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.password}</span>}
+                         </div>
                          <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                            <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.password ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                             <input 
                                type="password"
                                placeholder="••••••••"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               aria-invalid={!!errors.password}
+                               className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                                value={formData.password}
-                               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                               onChange={(e) => {
+                                  setFormData({ ...formData, password: e.target.value });
+                                  clearError('password');
+                               }}
                             />
                          </div>
                       </div>
 
                       {/* 3. Confirm Password */}
                       <div className="space-y-2">
-                         <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Confirm Password</label>
+                         <div className="flex justify-between">
+                            <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Confirm Password</label>
+                            {errors.confirmPassword && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.confirmPassword}</span>}
+                         </div>
                          <div className="relative group">
-                            <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                            <ShieldCheck className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.confirmPassword ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                             <input 
                                type="password"
                                placeholder="••••••••"
-                               className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                               aria-invalid={!!errors.confirmPassword}
+                               className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.confirmPassword ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                                value={formData.confirmPassword}
-                               onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                               onChange={(e) => {
+                                  setFormData({ ...formData, confirmPassword: e.target.value });
+                                  clearError('confirmPassword');
+                               }}
                             />
                          </div>
                       </div>
                     </motion.div>
                   )}
                </AnimatePresence>
-
-               {error && (
-                  <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-4 rounded-xl font-medium animate-pulse text-center">
-                     {error}
-                  </div>
-               )}
 
                {/* Action Buttons */}
                <div className="pt-4">

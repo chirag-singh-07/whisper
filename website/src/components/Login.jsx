@@ -5,25 +5,58 @@ import { LogIn, User, Lock, Loader2, ArrowRight, ShieldCheck, Zap, Globe } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function Login() {
-  const [formData, setFormData] = useState({ identifier: '', password: '' });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const validate = () => {
+    const newErrors = {};
+    if (!formData.email.trim()) newErrors.email = "Required";
+    if (!formData.password) newErrors.password = "Required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const clearError = (field) => {
+    if (errors[field]) {
+       setErrors(prev => ({ ...prev, [field]: null }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validate()) {
+       toast.error("Please fill in all fields");
+       return;
+    }
+
     setLoading(true);
-    setError('');
+    const loadingToast = toast.loading("Accessing encrypted vault...");
+
     try {
       const { data } = await api.post('/auth/login', formData);
       localStorage.setItem('accessToken', data.accessToken);
       localStorage.setItem('refreshToken', data.refreshToken);
       localStorage.setItem('user', JSON.stringify(data.user));
+      
+      toast.dismiss(loadingToast);
+      toast.success("Welcome back!", {
+         description: "Secure connection established."
+      });
+      
       navigate('/chat');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login');
+      toast.dismiss(loadingToast);
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      
+      toast.error(errorMessage, {
+         description: err.response?.status === 401 ? "Invalid credentials. Please try again." : "Server isn't responding."
+      });
     } finally {
       setLoading(false);
     }
@@ -49,18 +82,24 @@ export default function Login() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-6">
-                {/* 1. Username/Email */}
+                {/* 1. Email */}
                 <div className="space-y-2">
-                   <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">ID or Email</label>
+                   <div className="flex justify-between">
+                     <label className="text-xs uppercase font-bold text-muted-foreground/80 tracking-widest pl-1">Email</label>
+                     {errors.email && <span className="text-xs text-red-500 font-bold animate-in fade-in">{errors.email}</span>}
+                   </div>
                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                      <User className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.email ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                       <input 
-                         type="text"
-                         placeholder="username"
-                         className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
-                         value={formData.identifier}
-                         onChange={(e) => setFormData({ ...formData, identifier: e.target.value })}
-                         required
+                         type="email"
+                         placeholder="john@example.com"
+                         aria-invalid={!!errors.email}
+                         className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.email ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
+                         value={formData.email}
+                         onChange={(e) => {
+                            setFormData({ ...formData, email: e.target.value });
+                            clearError('email');
+                         }}
                          autoFocus
                       />
                    </div>
@@ -73,23 +112,20 @@ export default function Login() {
                       <Link to="/forgot-password" className="text-xs font-bold text-primary hover:underline">Forgot?</Link>
                    </div>
                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors h-5 w-5" />
+                      <Lock className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors h-5 w-5 ${errors.password ? 'text-red-500' : 'text-muted-foreground group-focus-within:text-primary'}`} />
                       <input 
                          type="password"
                          placeholder="••••••••"
-                         className="w-full h-14 pl-12 bg-white/5 border border-white/10 rounded-2xl text-white focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-white/20"
+                         aria-invalid={!!errors.password}
+                         className={`w-full h-14 pl-12 bg-white/5 border rounded-2xl text-white outline-none transition-all placeholder:text-white/20 ${errors.password ? 'border-red-500/50 focus:border-red-500 focus:ring-1 focus:ring-red-500' : 'border-white/10 focus:border-primary focus:ring-1 focus:ring-primary'}`}
                          value={formData.password}
-                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                         required
+                         onChange={(e) => {
+                            setFormData({ ...formData, password: e.target.value });
+                            clearError('password');
+                         }}
                       />
                    </div>
                 </div>
-
-               {error && (
-                  <div className="bg-destructive/10 border border-destructive/20 text-destructive text-sm p-4 rounded-xl font-medium animate-pulse text-center">
-                     {error}
-                  </div>
-               )}
 
                {/* Submit Button */}
                <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-dark transition-transform hover:scale-[1.02] shadow-xl shadow-primary/20 mt-4">
