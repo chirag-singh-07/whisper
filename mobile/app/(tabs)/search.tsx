@@ -13,7 +13,7 @@ import ScreenWrapper from "../../components/ui/ScreenWrapper";
 import Skeleton from "../../components/ui/Skeleton";
 import { useSearch, SearchUser } from "../../hooks/useSearch";
 import { useRouter } from "expo-router";
-import { BASE_URL } from "../../api/client";
+import { BASE_URL, client } from "../../api/client";
 
 const { width } = Dimensions.get("window");
 

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AuthProvider } from "../context/AuthContext";
 import Toast from "react-native-toast-message";
 import * as SplashScreen from "expo-splash-screen";
+import { SocketProvider } from "@/context/SocketContext";
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -14,13 +15,15 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            animation: "fade_from_bottom",
-            contentStyle: { backgroundColor: "#0D0D0F" },
-          }}
-        />
+        <SocketProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade_from_bottom",
+              contentStyle: { backgroundColor: "#0D0D0F" },
+            }}
+          />
+        </SocketProvider>
       </AuthProvider>
       <Toast />
     </QueryClientProvider>
