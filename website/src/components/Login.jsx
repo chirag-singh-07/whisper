@@ -121,8 +121,8 @@ export default function Login() {
          <div className="max-w-md w-full mx-auto">
             {/* Header */}
             <div className="mb-12">
-               <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center mb-6 text-primary shadow-lg shadow-primary/10">
-                  <LogIn size={24} />
+               <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mb-6 shadow-2xl shadow-primary/10 border border-primary/20 backdrop-blur-xl">
+                  <img src="/logo.png" alt="Whisper Logo" className="w-10 h-10 object-contain" />
                </div>
                <h1 className="text-4xl font-black text-white tracking-tight mb-3">
                   Welcome Back
@@ -180,7 +180,7 @@ export default function Login() {
                 </div>
 
                {/* Submit Button */}
-               <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-primary text-white font-bold text-lg hover:bg-primary-dark transition-transform hover:scale-[1.02] shadow-xl shadow-primary/20 mt-4">
+               <Button type="submit" disabled={loading} className="w-full h-14 rounded-2xl bg-primary text-black font-bold text-lg hover:bg-primary-dark transition-transform hover:scale-[1.02] shadow-xl shadow-primary/20 mt-4">
                   {loading ? <Loader2 className="animate-spin mr-2" /> : 'Sign In'}
                </Button>
             </form>

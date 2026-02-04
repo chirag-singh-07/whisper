@@ -35,7 +35,12 @@ export async function requireAuth(
 ): Promise<void> {
   try {
     // Extract access token from cookies
-    const accessToken = req.cookies?.accessToken;
+    let accessToken = req.cookies?.accessToken;
+
+    // Fallback: Check Authorization header
+    if (!accessToken && req.headers.authorization?.startsWith("Bearer ")) {
+      accessToken = req.headers.authorization.split(" ")[1];
+    }
 
     if (!accessToken) {
       sendError(res, "Authentication required", 401);

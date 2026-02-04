@@ -38,6 +38,9 @@ export const handleUploadAvatar = async (req: Request, res: Response) => {
   }
 };
 
+import { RequestModel } from "../models/RequestModel";
+import { ChatModel } from "../models/ChatModel";
+
 export const handleSearchUsers = async (req: Request, res: Response) => {
   try {
     const userId = req.userId;
@@ -62,7 +65,43 @@ export const handleSearchUsers = async (req: Request, res: Response) => {
       .select("name username avatarUrl about")
       .limit(20);
 
-    res.status(200).json({ users });
+    // Enrich users with connection status
+    const usersWithStatus = await Promise.all(
+      users.map(async (u) => {
+        const userObj = u.toObject();
+
+        // Check for existing chat (Friendship)
+        const chat = await ChatModel.findOne({
+          participants: { $all: [userId, u._id] },
+          isGroup: false,
+        });
+
+        if (chat) {
+          return { ...userObj, connectionStatus: "friends" };
+        }
+
+        // Check for pending request
+        const request = await RequestModel.findOne({
+          $or: [
+            { sender: userId, receiver: u._id },
+            { sender: u._id, receiver: userId },
+          ],
+          status: "pending",
+        });
+
+        if (request) {
+          if (request.sender.toString() === userId) {
+            return { ...userObj, connectionStatus: "pending_sent" };
+          } else {
+            return { ...userObj, connectionStatus: "pending_received" };
+          }
+        }
+
+        return { ...userObj, connectionStatus: "none" };
+      }),
+    );
+
+    res.status(200).json({ users: usersWithStatus });
   } catch (error) {
     res.status(500).json({ message: "Search failed", error });
   }

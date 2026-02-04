@@ -29,10 +29,6 @@ export const getChats = async (req: Request, res: Response) => {
       };
     });
 
-    if (!chats || chats.length === 0) {
-      return res.status(404).json({ message: "No chats found" });
-    }
-
     res.status(200).json({ formattedChats });
   } catch (error) {
     console.error("Error fetching chats:", error);

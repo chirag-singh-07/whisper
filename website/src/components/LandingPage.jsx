@@ -82,8 +82,8 @@ export default function LandingPage() {
       <nav className="fixed top-0 w-full z-50 glass border-b border-white/5 bg-black/80 backdrop-blur-md">
         <div className="w-full max-w-[1400px] mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => navigate('/')}>
-            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
-              <MessageSquare className="text-primary" size={20} />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <img src="/logo.png" alt="Whisper Logo" className="w-8 h-8 object-contain" />
             </div>
             <span className="text-white text-xl font-bold tracking-tight">Whisper</span>
           </div>

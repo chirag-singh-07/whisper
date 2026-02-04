@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 import { ChatModel } from "../models/ChatModel";
 import { MessageModel } from "../models/MessageModel";
+import { getIO } from "../utils/socket";
 
 export const handleGetMessagesByChatId = async (
   req: Request,
@@ -83,6 +84,14 @@ export const handleSendMessage = async (req: Request, res: Response) => {
     const populatedMessage = await MessageModel.findById(
       newMessage._id,
     ).populate("sender", "name email avatarUrl");
+
+    // Emit socket event to the chat room
+    try {
+      const io = getIO();
+      io.to(chatId).emit("message:new", populatedMessage);
+    } catch (err) {
+      console.warn("Socket IO not initialized or failed to emit", err);
+    }
 
     res.status(201).json({ message: populatedMessage });
   } catch (error) {

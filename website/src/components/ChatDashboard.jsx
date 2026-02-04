@@ -32,11 +32,6 @@ export default function ChatDashboard() {
     if (activeChat) setShowDossier(true);
   }, [activeChat]);
 
-  // Handle Loading State
-  if (chatsLoading && chats.length === 0) {
-    return <LoadingScreen message="Decrypting your messages..." />;
-  }
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -64,6 +59,11 @@ export default function ChatDashboard() {
     }, 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
+
+  // Handle Loading State
+  if (chatsLoading && chats.length === 0) {
+    return <LoadingScreen message="Decrypting your messages..." />;
+  }
 
   const startChat = async (participant) => {
     try {
@@ -118,8 +118,8 @@ export default function ChatDashboard() {
         msgsLoading={msgsLoading}
         user={user}
         getAvatar={getAvatar}
-        showDetails={showDetails}
-        setShowDetails={setShowDetails}
+        showDetails={showDossier}
+        setShowDetails={setShowDossier}
         messageText={messageText}
         setMessageText={setMessageText}
         handleSend={handleSend}
@@ -128,11 +128,11 @@ export default function ChatDashboard() {
       />
 
       <AnimatePresence>
-        {activeChat && showDetails && (
+        {activeChat && showDossier && (
           <UserDossier 
             activeChat={activeChat}
             getAvatar={getAvatar}
-            setShowDetails={setShowDetails}
+            setShowDetails={setShowDossier}
           />
         )}
       </AnimatePresence>

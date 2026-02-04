@@ -1,10 +1,13 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Register from './components/Register';
 import ChatDashboard from './components/ChatDashboard';
 import './App.css';
+import { SocketProvider } from './context/SocketContext';
+import { Toaster } from './components/ui/sonner';
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -30,37 +33,44 @@ const AuthRoute = ({ children }) => {
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route 
-          path="/login" 
-          element={
-            <AuthRoute>
-              <Login />
-            </AuthRoute>
-          } 
-        />
-        <Route 
-          path="/register" 
-          element={
-            <AuthRoute>
-              <Register />
-            </AuthRoute>
-          } 
-        />
-        <Route 
-          path="/chat" 
-          element={
-            <ProtectedRoute>
-              <ChatDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+    <Router>
+      <SocketProvider>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<LandingPage />} />
+          <Route 
+            path="/login" 
+            element={
+              <AuthRoute>
+                <Login />
+              </AuthRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <AuthRoute>
+                <Register />
+              </AuthRoute>
+            } 
+          />
+
+          {/* Protected Routes */}
+          <Route 
+            path="/chat" 
+            element={
+              <ProtectedRoute>
+                <ChatDashboard />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* Catch all redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        <Toaster />
+      </SocketProvider>
+    </Router>
   );
 }
 

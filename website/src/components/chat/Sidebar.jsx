@@ -1,9 +1,12 @@
-import React from 'react';
-import { Search, Settings, Loader2, ChevronRight, MessageSquare } from 'lucide-react';
+import React, { useState } from 'react';
+import { Search, Settings, Loader2, ChevronRight, MessageSquare, Plus, Users, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AnimatePresence, motion } from 'framer-motion';
+import NewChatDialog from './NewChatDialog';
+import RequestsList from './RequestsList';
+import { useRequests } from '../../hooks/useRequests';
 
 export default function Sidebar({ 
   user, 
@@ -18,18 +21,32 @@ export default function Sidebar({
   startChat, 
   getAvatar 
 }) {
+  const [isNewChatOpen, setIsNewChatOpen] = useState(false);
+  const [view, setView] = useState('chats'); // 'chats' | 'requests'
+  const { requests, acceptRequest, rejectRequest } = useRequests();
+
   return (
     <aside className="w-80 md:w-[400px] border-r border-white/5 flex flex-col bg-[#111113]/50 backdrop-blur-3xl relative z-20">
       {/* Sidebar Header */}
       <div className="p-6 pb-2">
         <div className="flex items-center justify-between mb-8">
+           {/* Logo Area */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
-              <MessageSquare size={18} className="text-white fill-current" />
+            <div className="w-16 h-16 flex items-center justify-center">
+              <img src="/logo.png" alt="Whisper Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-black tracking-tighter uppercase italic">Whisper</h1>
           </div>
+          
           <div className="flex items-center gap-2">
+             <Button 
+               onClick={() => setIsNewChatOpen(true)}
+               variant="ghost" 
+               size="icon" 
+               className="h-9 w-9 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary transition-colors"
+             >
+               <Plus size={18} />
+             </Button>
              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-white/5">
                <Settings size={18} className="text-muted-foreground" />
              </Button>
@@ -52,9 +69,30 @@ export default function Sidebar({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+
+        {/* View Toggles */}
+        <div className="flex p-1 bg-white/5 rounded-xl mb-2">
+           <button 
+             onClick={() => setView('chats')}
+             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${view === 'chats' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-white'}`}
+           >
+              <MessageCircle size={14} />
+              Chats
+           </button>
+           <button 
+             onClick={() => setView('requests')}
+             className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all relative ${view === 'requests' ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'text-muted-foreground hover:text-white'}`}
+           >
+              <Users size={14} />
+              Requests
+              {requests.length > 0 && (
+                 <span className="absolute top-1.5 right-3 w-2 h-2 rounded-full bg-red-500 ring-2 ring-[#111113]" />
+              )}
+           </button>
+        </div>
       </div>
 
-      {/* Chats List */}
+      {/* Content Area */}
       <ScrollArea className="flex-1 px-3">
         <div className="space-y-1 pb-6">
           {searchQuery.trim() ? (
@@ -86,6 +124,13 @@ export default function Sidebar({
                 ))
               )}
             </div>
+          ) : view === 'requests' ? (
+             <RequestsList 
+               requests={requests} 
+               acceptRequest={acceptRequest} 
+               rejectRequest={rejectRequest}
+               getAvatar={getAvatar}
+             />
           ) : (
             <>
               <div className="flex items-center justify-between mb-3 px-3">
@@ -146,6 +191,13 @@ export default function Sidebar({
           )}
         </div>
       </ScrollArea>
+
+      <NewChatDialog 
+        isOpen={isNewChatOpen} 
+        onClose={() => setIsNewChatOpen(false)} 
+        startChat={startChat}
+        getAvatar={getAvatar}
+      />
     </aside>
   );
 }

@@ -13,6 +13,7 @@ import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import messageRoutes from "./routes/message.routes";
 import chatRoutes from "./routes/chat.routes";
+import requestRoutes from "./routes/request.routes";
 
 const app = express();
 
@@ -65,6 +66,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/chats", chatRoutes);
+app.use("/api/requests", requestRoutes);
 
 /**
  * Centralized Error Handler
