@@ -27,7 +27,12 @@ export const useChats = () => {
     try {
       setLoading(true);
       const data = await client<{ formattedChats: Chat[] }>("/chats");
-      setChats(data.formattedChats);
+      // Deduplicate chats by _id to prevent duplicate key warnings
+      const uniqueChats = data.formattedChats.filter(
+        (chat, index, self) =>
+          index === self.findIndex((c) => c._id === chat._id),
+      );
+      setChats(uniqueChats);
     } catch (err: any) {
       setError(err?.message || "Failed to load chats");
     } finally {
@@ -73,7 +78,13 @@ export const useChats = () => {
         updatedChats.splice(chatIndex, 1);
         updatedChats.unshift(chatToUpdate);
 
-        return updatedChats;
+        // Deduplicate to ensure no duplicates
+        const uniqueChats = updatedChats.filter(
+          (chat, index, self) =>
+            index === self.findIndex((c) => c._id === chat._id),
+        );
+
+        return uniqueChats;
       });
     };
 
