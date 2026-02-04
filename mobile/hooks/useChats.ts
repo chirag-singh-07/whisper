@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { client } from "../api/client";
+import { useSocket } from "../context/SocketContext";
 
 export interface Chat {
   _id: string;
@@ -20,8 +21,9 @@ export const useChats = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const socket = useSocket();
 
-  const fetchChats = async () => {
+  const fetchChats = useCallback(async () => {
     try {
       setLoading(true);
       const data = await client<{ formattedChats: Chat[] }>("/chats");
@@ -31,11 +33,56 @@ export const useChats = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchChats();
-  }, []);
+  }, [fetchChats]);
+
+  // Socket integration for real-time chat list updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewMessage = (newMessage: any) => {
+      setChats((prevChats) => {
+        // Find the chat this message belongs to
+        const chatIndex = prevChats.findIndex(
+          (c) =>
+            c._id === newMessage.chat ||
+            c._id === (newMessage.chat as any)?._id,
+        );
+
+        // If chat not found, don't modify state here
+        // The user will need to refresh or we handle it elsewhere
+        if (chatIndex === -1) {
+          console.log("Message for unknown chat, ignoring:", newMessage.chat);
+          return prevChats;
+        }
+
+        const updatedChats = [...prevChats];
+        const chatToUpdate = { ...updatedChats[chatIndex] };
+
+        // Update last message
+        chatToUpdate.lastMessage = {
+          text: newMessage.text,
+          createdAt: newMessage.createdAt,
+        };
+        chatToUpdate.lastMessageAt = newMessage.createdAt;
+
+        // Move to top
+        updatedChats.splice(chatIndex, 1);
+        updatedChats.unshift(chatToUpdate);
+
+        return updatedChats;
+      });
+    };
+
+    socket.on("message:new", handleNewMessage);
+
+    return () => {
+      socket.off("message:new", handleNewMessage);
+    };
+  }, [socket]);
 
   return { chats, loading, error, refresh: fetchChats };
 };

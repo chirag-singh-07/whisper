@@ -38,44 +38,17 @@ export default function Login() {
     setLoading(true);
     const loadingToast = toast.loading("Accessing encrypted vault...");
     
-    // Create log array to store all debug info
-    const debugLogs = [];
-    const logAndStore = (message, data = null) => {
-      const logEntry = data ? `${message} ${JSON.stringify(data, null, 2)}` : message;
-      console.log(message, data || '');
-      debugLogs.push(logEntry);
-    };
-
     try {
       const { data: responseBody } = await api.post('/auth/login', formData);
-      logAndStore('🔍 Full response:', responseBody);
-      logAndStore('🔍 Response data:', responseBody.data);
       
       const { tokens, ...userData } = responseBody.data;
-      logAndStore('🔍 Extracted tokens:', tokens);
-      logAndStore('🔍 Extracted userData:', userData);
       
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
       
-      logAndStore('✅ Stored accessToken:', localStorage.getItem('accessToken'));
-      logAndStore('✅ Stored user:', localStorage.getItem('user'));
-      
-      // Write logs to file
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const logContent = `Login Success - ${timestamp}\n${'='.repeat(50)}\n\n${debugLogs.join('\n\n')}\n`;
-      
-      // Download logs as file
-      const blob = new Blob([logContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `login_success_${timestamp}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Dispatch custom event to trigger socket re-initialization
+      window.dispatchEvent(new Event('login'));
       
       toast.dismiss(loadingToast);
       toast.success("Welcome back!", {
@@ -84,25 +57,6 @@ export default function Login() {
       
       navigate('/chat');
     } catch (err) {
-      // Log error details
-      debugLogs.push(`❌ Error occurred: ${err.message}`);
-      debugLogs.push(`❌ Response status: ${err.response?.status}`);
-      debugLogs.push(`❌ Response data: ${JSON.stringify(err.response?.data, null, 2)}`);
-      
-      // Write error logs to file
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const logContent = `Login Error - ${timestamp}\n${'='.repeat(50)}\n\n${debugLogs.join('\n\n')}\n`;
-      
-      const blob = new Blob([logContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `login_error_${timestamp}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
       toast.dismiss(loadingToast);
       const errorMessage = err.response?.data?.message || 'Login failed';
       

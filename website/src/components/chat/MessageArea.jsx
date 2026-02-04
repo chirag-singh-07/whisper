@@ -1,10 +1,12 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Phone, Video, Info, Loader2, Plus, Shield, Smile, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { MessageSquare } from 'lucide-react';
+import { useSocket } from '@/context/SocketContext';
+
 
 export default function ChatArea({ 
   activeChat, 
@@ -20,6 +22,71 @@ export default function ChatArea({
   sending, 
   messagesEndRef 
 }) {
+  const socket = useSocket();
+  const [isTyping, setIsTyping] = useState(false);
+  const [isOnline, setIsOnline] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
+
+  // Track online status
+  useEffect(() => {
+    if (!socket || !activeChat) return;
+
+    // Set initial status
+    setIsOnline(activeChat.participants.isOnline || false);
+
+    const handleUserOnline = ({ userId }) => {
+      if (userId === activeChat.participants._id) {
+        setIsOnline(true);
+      }
+    };
+
+    const handleUserOffline = ({ userId }) => {
+      if (userId === activeChat.participants._id) {
+        setIsOnline(false);
+      }
+    };
+
+    socket.on('user:online', handleUserOnline);
+    socket.on('user:offline', handleUserOffline);
+
+    return () => {
+      socket.off('user:online', handleUserOnline);
+      socket.off('user:offline', handleUserOffline);
+    };
+  }, [socket, activeChat]);
+
+  // Track typing indicator
+  useEffect(() => {
+    if (!socket || !activeChat) return;
+
+    const handleTyping = ({ chatId, userId, isTyping: typing }) => {
+      if (chatId === activeChat._id && userId === activeChat.participants._id) {
+        setIsTyping(typing);
+      }
+    };
+
+    socket.on('typing', handleTyping);
+
+    return () => {
+      socket.off('typing', handleTyping);
+    };
+  }, [socket, activeChat]);
+
+  // Send typing indicator
+  const handleTypingEvent = () => {
+    if (!socket || !activeChat) return;
+
+    socket.emit('typing', { chatId: activeChat._id, isTyping: true });
+
+    if (typingTimeout) clearTimeout(typingTimeout);
+
+    const timeout = setTimeout(() => {
+      socket.emit('typing', { chatId: activeChat._id, isTyping: false });
+    }, 2000);
+
+    setTypingTimeout(timeout);
+  };
+
   if (!activeChat) {
     return (
       <main className="flex-1 flex flex-col relative bg-[#0A0A0B]">
@@ -71,17 +138,30 @@ export default function ChatArea({
         {/* Header */}
         <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 bg-[#0A0A0B]/80 backdrop-blur-xl z-30 sticky top-0">
           <div className="flex items-center gap-4">
-            <Avatar className="h-11 w-11 rounded-1.5xl border border-white/10 shadow-lg">
-              <AvatarImage src={getAvatar(activeChat.participants.avatarUrl)} className="object-cover" />
-              <AvatarFallback className="bg-secondary text-primary font-bold">
-                {activeChat.participants.name?.charAt(0)}
-              </AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-11 w-11 rounded-1.5xl border border-white/10 shadow-lg">
+                <AvatarImage src={getAvatar(activeChat.participants.avatarUrl)} className="object-cover" />
+                <AvatarFallback className="bg-secondary text-primary font-bold">
+                  {activeChat.participants.name?.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+              {isOnline && (
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-success border-2 border-[#0A0A0B] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              )}
+            </div>
             <div>
               <h3 className="text-white font-bold leading-tight">{activeChat.participants.name}</h3>
               <div className="flex items-center gap-1.5 opacity-70">
-                <span className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                <span className="text-[10px] font-black uppercase tracking-wider text-success">Active Now</span>
+                {isTyping ? (
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary animate-pulse">Typing...</span>
+                ) : isOnline ? (
+                  <>
+                    <span className="w-1.5 h-1.5 rounded-full bg-success shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+                    <span className="text-[10px] font-black uppercase tracking-wider text-success">Active Now</span>
+                  </>
+                ) : (
+                  <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Offline</span>
+                )}
               </div>
             </div>
           </div>
@@ -105,8 +185,8 @@ export default function ChatArea({
         </header>
 
         {/* Messages Scroll Area */}
-        <ScrollArea className="flex-1 p-8 px-4 md:px-12">
-          <div className="space-y-8 max-w-5xl mx-auto pb-8">
+        <ScrollArea className="flex-1 p-8 px-4 md:px-12 overflow-x-hidden">
+          <div className="space-y-8 max-w-5xl mx-auto pb-8 w-full">
             {msgsLoading ? (
               <div className="flex flex-col items-center justify-center py-32 opacity-20">
                 <Loader2 className="animate-spin text-primary mb-4" size={40} />
@@ -134,11 +214,19 @@ export default function ChatArea({
                       initial={{ opacity: 0, y: 15, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       key={m._id}
-                      className={`flex group ${isMe ? 'justify-end' : 'justify-start'}`}
+                      className={`flex gap-3 group ${isMe ? 'justify-end' : 'justify-start'}`}
                     >
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[80%] md:max-w-[65%]`}>
-                        <div className={`px-5 py-4 rounded-[26px] shadow-2xl ${isMe ? 'bg-primary text-white rounded-br-none shadow-primary/10' : 'bg-[#1A1A1C] border border-white/5 text-white rounded-bl-none shadow-black/50'}`}>
-                          <p className="text-[15px] leading-relaxed font-medium selection:bg-black/20">{m.text}</p>
+                      {!isMe && (
+                        <Avatar className="h-8 w-8 rounded-xl border border-white/10 shadow-lg mt-1 flex-shrink-0">
+                          <AvatarImage src={getAvatar(activeChat.participants.avatarUrl)} className="object-cover" />
+                          <AvatarFallback className="bg-secondary text-primary font-bold text-xs">
+                            {activeChat.participants.name?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100%-3rem)] sm:max-w-[70%] min-w-0 flex-1`}>
+                        <div className={`px-5 py-4 rounded-[26px] shadow-2xl w-full ${isMe ? 'bg-primary text-white rounded-br-none shadow-primary/10' : 'bg-[#1A1A1C] border border-white/5 text-white rounded-bl-none shadow-black/50'}`}>
+                          <p className="text-[15px] leading-relaxed font-medium selection:bg-black/20 break-words whitespace-pre-wrap">{m.text}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/60">
@@ -147,9 +235,44 @@ export default function ChatArea({
                           {isMe && <Shield size={10} className="text-primary opacity-50" />}
                         </div>
                       </div>
+                      {isMe && (
+                        <Avatar className="h-8 w-8 rounded-xl border border-white/10 shadow-lg mt-1 flex-shrink-0">
+                          <AvatarImage src={getAvatar(user.avatarUrl)} className="object-cover" />
+                          <AvatarFallback className="bg-primary text-white font-bold text-xs">
+                            {user.name?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
                     </motion.div>
                   );
                 })}
+                
+                {/* Typing Indicator */}
+                <AnimatePresence>
+                  {isTyping && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="flex gap-3 justify-start"
+                    >
+                      <Avatar className="h-8 w-8 rounded-xl border border-white/10 shadow-lg mt-1">
+                        <AvatarImage src={getAvatar(activeChat.participants.avatarUrl)} className="object-cover" />
+                        <AvatarFallback className="bg-secondary text-primary font-bold text-xs">
+                          {activeChat.participants.name?.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="px-5 py-4 rounded-[26px] bg-[#1A1A1C] border border-white/5 shadow-2xl rounded-bl-none">
+                        <div className="flex gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-2 h-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
                 <div ref={messagesEndRef} className="h-4" />
               </>
             )}
@@ -172,7 +295,10 @@ export default function ChatArea({
                 placeholder="Whisper something secure..."
                 className="flex-1 bg-transparent text-white resize-none text-[15px] font-medium max-h-48 py-3.5 outline-none placeholder:text-muted-foreground/30 scrollbar-hide"
                 value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
+                onChange={(e) => {
+                  setMessageText(e.target.value);
+                  handleTypingEvent();
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();

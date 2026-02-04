@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { client } from "../api/client";
+import { useSocket } from "../context/SocketContext";
 
 export interface Message {
   _id: string;
@@ -9,6 +10,7 @@ export interface Message {
     name: string;
     avatarUrl: string;
   };
+  chat?: string; // Chat ID that this message belongs to
   type: string;
   createdAt: string;
 }
@@ -18,6 +20,7 @@ export const useChat = (chatId?: string) => {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const socket = useSocket();
 
   const fetchMessages = async () => {
     if (!chatId) return;
@@ -55,6 +58,34 @@ export const useChat = (chatId?: string) => {
   useEffect(() => {
     fetchMessages();
   }, [chatId]);
+
+  // Socket integration for real-time messages
+  useEffect(() => {
+    if (!socket || !chatId) return;
+
+    // Join the chat room to receive messages
+    socket.emit("chat:join", { chatId });
+
+    const handleNewMessage = (newMessage: Message) => {
+      // Only append if it belongs to this chat and isn't a duplicate
+      if (
+        newMessage.chat === chatId ||
+        (newMessage.chat as any)?._id === chatId
+      ) {
+        setMessages((prev) => {
+          if (prev.some((m) => m._id === newMessage._id)) return prev;
+          return [...prev, newMessage];
+        });
+      }
+    };
+
+    socket.on("message:new", handleNewMessage);
+
+    return () => {
+      socket.emit("chat:leave", { chatId });
+      socket.off("message:new", handleNewMessage);
+    };
+  }, [socket, chatId]);
 
   return {
     messages,

@@ -45,38 +45,60 @@ export const initializeSocket = (httpServer: HttpServer) => {
 
   io.on("connection", async (socket: Socket) => {
     const userId = (socket as any).userId as string;
-    if (!userId) return socket.disconnect(true);
+    if (!userId) {
+      console.log("❌ Socket connection rejected - No userId");
+      return socket.disconnect(true);
+    }
+
+    console.log(
+      `✅ Socket connected - User ID: ${userId}, Socket ID: ${socket.id}`,
+    );
 
     // Register socket id for the user
     const sockets = userSockets.get(userId) || new Set<string>();
     sockets.add(socket.id);
     userSockets.set(userId, sockets);
 
+    console.log(
+      `📊 User ${userId} now has ${sockets.size} active connection(s)`,
+    );
+
     // If this is first socket for the user, set user online
     if (sockets.size === 1) {
-      await UserModel.findByIdAndUpdate(userId, { isOnline: true, lastSeen: new Date() });
+      await UserModel.findByIdAndUpdate(userId, {
+        isOnline: true,
+        lastSeen: new Date(),
+      });
       io!.emit("user:online", { userId });
+      console.log(`🟢 User ${userId} is now ONLINE`);
     }
 
     // Acknowledge and send current online users (lightweight)
     socket.emit("connected", { userId });
+    console.log(`📤 Sent 'connected' acknowledgment to ${userId}`);
 
     // Join chat room
     socket.on("chat:join", async (data: { chatId: string }) => {
       if (!data?.chatId) return;
       socket.join(data.chatId);
+      console.log(`🚪 User ${userId} joined chat room: ${data.chatId}`);
     });
 
     // Leave chat room
     socket.on("chat:leave", async (data: { chatId: string }) => {
       if (!data?.chatId) return;
       socket.leave(data.chatId);
+      console.log(`🚪 User ${userId} left chat room: ${data.chatId}`);
     });
 
     // Typing indicator
     socket.on("typing", (data: { chatId: string; isTyping: boolean }) => {
       if (!data?.chatId) return;
-      socket.to(data.chatId).emit("typing", { chatId: data.chatId, userId, isTyping: !!data.isTyping });
+      socket.to(data.chatId).emit("typing", {
+        chatId: data.chatId,
+        userId,
+        isTyping: !!data.isTyping,
+      });
     });
 
     // Send message (persist and broadcast)
@@ -110,7 +132,10 @@ export const initializeSocket = (httpServer: HttpServer) => {
             lastMessageAt: message.createdAt || new Date(),
           });
 
-          const fullMessage = await MessageModel.findById(message._id).populate("sender", "name avatarUrl");
+          const fullMessage = await MessageModel.findById(message._id).populate(
+            "sender",
+            "name avatarUrl",
+          );
 
           // broadcast to participants in the room
           io!.to(payload.chatId).emit("message:new", fullMessage);
@@ -119,7 +144,11 @@ export const initializeSocket = (httpServer: HttpServer) => {
 
           ack && ack({ status: "ok", message: fullMessage });
         } catch (err: any) {
-          ack && ack({ status: "error", error: err?.message || "Failed to send message" });
+          ack &&
+            ack({
+              status: "error",
+              error: err?.message || "Failed to send message",
+            });
         }
       },
     );
@@ -134,7 +163,9 @@ export const initializeSocket = (httpServer: HttpServer) => {
           { new: true },
         );
         if (!msg) return;
-        io!.to(msg.chat.toString()).emit("message:read", { messageId: data.messageId, userId });
+        io!
+          .to(msg.chat.toString())
+          .emit("message:read", { messageId: data.messageId, userId });
       } catch (err) {
         // ignore
       }
@@ -146,23 +177,36 @@ export const initializeSocket = (httpServer: HttpServer) => {
         if (!data?.messageId) return;
         const msg = await MessageModel.findById(data.messageId);
         if (!msg) return;
-        io!.to(msg.chat.toString()).emit("message:delivered", { messageId: data.messageId, userId });
+        io!
+          .to(msg.chat.toString())
+          .emit("message:delivered", { messageId: data.messageId, userId });
       } catch (err) {
         // ignore
       }
     });
 
     socket.on("disconnect", async () => {
+      console.log(
+        `🔌 Socket disconnected - User ID: ${userId}, Socket ID: ${socket.id}`,
+      );
+
       // Remove socket id
       const sockets = userSockets.get(userId);
       if (sockets) {
         sockets.delete(socket.id);
         if (sockets.size === 0) {
           userSockets.delete(userId);
-          await UserModel.findByIdAndUpdate(userId, { isOnline: false, lastSeen: new Date() });
+          await UserModel.findByIdAndUpdate(userId, {
+            isOnline: false,
+            lastSeen: new Date(),
+          });
           io!.emit("user:offline", { userId });
+          console.log(`🔴 User ${userId} is now OFFLINE`);
         } else {
           userSockets.set(userId, sockets);
+          console.log(
+            `📊 User ${userId} still has ${sockets.size} active connection(s)`,
+          );
         }
       }
     });

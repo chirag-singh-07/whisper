@@ -12,15 +12,10 @@ import { Toaster } from './components/ui/sonner';
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('accessToken');
-  console.log('🔐 ProtectedRoute - Token check:', token);
-  console.log('🔐 ProtectedRoute - Token type:', typeof token);
-  console.log('🔐 ProtectedRoute - Is falsy?', !token);
   
   if (!token) {
-    console.log('❌ No token found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
-  console.log('✅ Token found, rendering protected content');
   return children;
 };
 
