@@ -14,6 +14,7 @@ import userRoutes from "./routes/user.routes";
 import messageRoutes from "./routes/message.routes";
 import chatRoutes from "./routes/chat.routes";
 import requestRoutes from "./routes/request.routes";
+import uploadRoutes from "./routes/upload.routes";
 
 const app = express();
 
@@ -60,13 +61,14 @@ app.get("/health", (req, res) => {
 
 // Serve uploaded files statically from /uploads
 
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/user", userRoutes);
 app.use("/api/messages", messageRoutes);
 app.use("/api/chats", chatRoutes);
 app.use("/api/requests", requestRoutes);
+app.use("/api/upload", uploadRoutes);
 
 /**
  * Centralized Error Handler

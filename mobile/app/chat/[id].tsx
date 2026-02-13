@@ -7,8 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  FlatList,
 } from "react-native";
+import { KeyboardAwareFlatList } from "react-native-keyboard-aware-scroll-view";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import ScreenWrapper from "../../components/ui/ScreenWrapper";
@@ -23,7 +23,8 @@ export default function ChatScreen() {
   const router = useRouter();
   const [messageText, setMessageText] = useState("");
   const { messages, loading, sending, sendMessage } = useChat(id as string);
-  const flatListRef = useRef<FlatList>(null);
+
+  const flatListRef = useRef<KeyboardAwareFlatList | null>(null);
   const insets = useSafeAreaInsets();
 
   const handleSend = async () => {
@@ -130,19 +131,20 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
 
-        <FlatList
+        <KeyboardAwareFlatList
           ref={flatListRef}
           data={messages}
           renderItem={renderMessage}
           keyExtractor={(item) => item._id}
-          contentContainerStyle={{ padding: 16, paddingBottom: 16 }}
+          contentContainerStyle={{ padding: 16 }}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
-          onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          inverted
+          enableOnAndroid
+          extraScrollHeight={20}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+          onContentSizeChange={() =>
+            flatListRef.current?.scrollToPosition(messages.length, 99999, true)
+          }
         />
 
         {/* Input Area */}

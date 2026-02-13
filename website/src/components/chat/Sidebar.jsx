@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useSocket } from '../../context/SocketContext';
+import { useEffect, useState } from 'react';
 import { Search, Settings, Loader2, ChevronRight, MessageSquare, Plus, Users, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -24,6 +25,41 @@ export default function Sidebar({
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
   const [view, setView] = useState('chats'); // 'chats' | 'requests'
   const { requests, acceptRequest, rejectRequest } = useRequests();
+  const socket = useSocket();
+  const [onlineUsers, setOnlineUsers] = useState(new Set());
+
+  useEffect(() => {
+    if (!socket) return;
+
+    // Request initial online users list if backend supports it, 
+    // or wait for updates. For now, we listen for updates.
+    
+    const handleUserOnline = ({ userId }) => {
+      setOnlineUsers(prev => new Set(prev).add(userId));
+    };
+
+    const handleUserOffline = ({ userId }) => {
+      setOnlineUsers(prev => {
+        const next = new Set(prev);
+        next.delete(userId);
+        return next;
+      });
+    };
+
+    socket.on('user:online', handleUserOnline);
+    socket.on('user:offline', handleUserOffline);
+    
+    // Also listen for a full list if connected
+    socket.on('users:online', (users) => {
+        setOnlineUsers(new Set(users.map(u => u._id || u))); 
+    });
+
+    return () => {
+      socket.off('user:online', handleUserOnline);
+      socket.off('user:offline', handleUserOffline);
+      socket.off('users:online');
+    };
+  }, [socket]);
 
   return (
     <aside className="w-80 md:w-[400px] border-r border-white/5 flex flex-col bg-[#111113]/50 backdrop-blur-3xl relative z-20">
@@ -148,6 +184,9 @@ export default function Sidebar({
               ) : (
                  chats.map(chat => {
                    const isActive = activeChat?._id === chat._id;
+                   const otherUser = chat.participants;
+                   const isOnline = onlineUsers.has(otherUser._id);
+
                    return (
                       <button
                         key={chat._id}
@@ -161,9 +200,11 @@ export default function Sidebar({
                               {chat.participants.name?.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#111113] p-0.5">
-                            <div className="w-full h-full rounded-full bg-success" />
-                          </div>
+                          {isOnline && (
+                              <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#111113] p-0.5">
+                                <div className="w-full h-full rounded-full bg-success box-shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                              </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0 text-left">
                           <div className="flex justify-between items-center mb-1">

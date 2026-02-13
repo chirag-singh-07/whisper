@@ -21,8 +21,36 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req: any, file: any, cb: any) => {
   // accept only image mimetypes
-  if (file.mimetype && String(file.mimetype).startsWith("image/")) cb(null, true);
+  if (file.mimetype && String(file.mimetype).startsWith("image/"))
+    cb(null, true);
   else cb(new Error("Only image uploads are allowed."));
 };
 
-export const uploadAvatar = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+const chatFileFilter = (req: any, file: any, cb: any) => {
+  // accept images, videos, audio, and common documents
+  if (
+    file.mimetype.startsWith("image/") ||
+    file.mimetype.startsWith("video/") ||
+    file.mimetype.startsWith("audio/") ||
+    file.mimetype === "application/pdf" ||
+    file.mimetype === "application/msword" ||
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.mimetype === "text/plain"
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error("Unsupported file type."), false);
+  }
+};
+
+export const uploadAvatar = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+export const upload = multer({
+  storage,
+  fileFilter: chatFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});

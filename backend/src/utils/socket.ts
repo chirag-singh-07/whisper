@@ -84,6 +84,9 @@ export const initializeSocket = (httpServer: HttpServer) => {
       `✅ Socket connected - User ID: ${userId}, Socket ID: ${socket.id}`,
     );
 
+    // Join the user's own room for personal notifications
+    socket.join(userId);
+
     // Register socket id for the user
     const sockets = userSockets.get(userId) || new Set<string>();
     sockets.add(socket.id);

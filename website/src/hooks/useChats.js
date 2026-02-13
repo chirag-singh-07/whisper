@@ -57,9 +57,11 @@ export const useChats = () => {
     };
 
     socket.on("message:new", handleNewMessage);
+    socket.on("request:accepted", fetchChats);
 
     return () => {
       socket.off("message:new", handleNewMessage);
+      socket.off("request:accepted", fetchChats);
     };
   }, [socket]);
 

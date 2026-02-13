@@ -4,7 +4,8 @@ let socket: Socket | null = null;
 
 export function initializeSocket(token: string, url?: string) {
   if (socket) return socket;
-  const baseUrl = url || (import.meta.env.VITE_API_URL as string) || "http://localhost:3000";
+  const baseUrl =
+    url || (import.meta.env.VITE_API_URL as string) || "http://localhost:5000";
 
   socket = io(baseUrl, {
     auth: { token },
@@ -23,7 +24,8 @@ export function initializeSocket(token: string, url?: string) {
 }
 
 export function getSocket() {
-  if (!socket) throw new Error("Socket not initialized. Call initializeSocket first.");
+  if (!socket)
+    throw new Error("Socket not initialized. Call initializeSocket first.");
   return socket;
 }
 

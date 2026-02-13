@@ -1,0 +1,29 @@
+import type { Request, Response } from "express";
+
+export const uploadFile = (req: Request, res: Response): any => {
+  try {
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ success: false, message: "No file uploaded" });
+    }
+
+    // Since we're serving static files from /uploads, the URL is just the filename
+    // We'll prefix it with /uploads/ on the frontend or here
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    res.status(200).json({
+      success: true,
+      message: "File uploaded successfully",
+      data: {
+        url: fileUrl,
+        filename: req.file.filename,
+        mimetype: req.file.mimetype,
+        size: req.file.size,
+      },
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ success: false, message: "File upload failed" });
+  }
+};
