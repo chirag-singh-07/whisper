@@ -24,21 +24,51 @@ export const initializeSocket = (httpServer: HttpServer) => {
   // Simple token-based socket authentication using JWT access tokens
   io.use(async (socket, next) => {
     try {
+      console.log("🔐 Socket authentication attempt...");
+      console.log("  - Socket ID:", socket.id);
+      console.log("  - Handshake auth:", socket.handshake.auth);
+      console.log(
+        "  - Authorization header:",
+        socket.handshake.headers?.authorization,
+      );
+
       const token =
         socket.handshake.auth?.token ||
         (socket.handshake.headers?.authorization || "").split(" ")[1];
-      if (!token) return next(new Error("Authentication error: token missing"));
+
+      if (!token) {
+        console.error("❌ Authentication failed: token missing");
+        return next(new Error("Authentication error: token missing"));
+      }
+
+      console.log("  - Token received:", token.substring(0, 30) + "...");
+      console.log("  - Token length:", token.length);
 
       const payload = verifyAccessToken(token);
+      console.log("✅ Token verified successfully");
+      console.log("  - User ID:", payload.userId);
+
       // attach userId to socket for later use
       (socket as any).userId = payload.userId;
 
       // Optionally: ensure user exists
       const user = await UserModel.findById(payload.userId).select("_id name");
-      if (!user) return next(new Error("Authentication error: user not found"));
+      if (!user) {
+        console.error(
+          "❌ Authentication failed: user not found for ID:",
+          payload.userId,
+        );
+        return next(new Error("Authentication error: user not found"));
+      }
 
+      console.log("✅ User found:", user.name);
       return next();
     } catch (err) {
+      console.error("❌ Socket authentication error:", err);
+      if (err instanceof Error) {
+        console.error("  - Error name:", err.name);
+        console.error("  - Error message:", err.message);
+      }
       return next(new Error("Authentication error"));
     }
   });

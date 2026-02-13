@@ -5,7 +5,7 @@ import Toast from "react-native-toast-message";
 
 // Basic API utility since we don't have the web's axios instance here yet
 // In a real app, this should be a shared utility
-const API_URL = "http://192.168.1.4:5000/api"; // Sync with SocketContext URL
+const API_URL = "http://192.168.1.13:5000/api"; // Sync with SocketContext URL
 
 export const useRequests = () => {
   const [requests, setRequests] = useState<any[]>([]);

@@ -317,10 +317,19 @@ export async function handleRefreshToken(
     user.refreshToken = newRefreshToken;
     await user.save();
 
-    // Set new cookies
+    // Set new cookies (for web clients)
     setAuthCookies(res, newAccessToken, newRefreshToken);
 
-    sendSuccess(res, null, "Token refreshed successfully", 200);
+    // Return tokens in response body (for mobile clients)
+    sendSuccess(
+      res,
+      {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+      "Token refreshed successfully",
+      200,
+    );
   } catch (error: any) {
     console.error("Token refresh error:", error);
     clearAuthCookies(res);

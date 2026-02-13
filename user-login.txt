@@ -1,0 +1,11 @@
+
+user 1 
+
+    user1@gmail.com
+    password : User@123
+
+
+user 2 
+
+    user2@gmail.com
+    password : User@123

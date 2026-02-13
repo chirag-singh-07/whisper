@@ -90,46 +90,46 @@ export default function ChatScreen() {
   return (
     <ScreenWrapper style={{ paddingTop: 0 }}>
       {/* Header */}
-      <View
-        style={{ paddingTop: insets.top + 10 }}
-        className="flex-row items-center px-4 pb-4 border-b border-surface-light bg-surface"
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1"
+        keyboardVerticalOffset={0}
       >
-        <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
-          <Ionicons name="chevron-back" size={24} color="white" />
-        </TouchableOpacity>
+        <View
+          style={{ paddingTop: insets.top + 10 }}
+          className="flex-row items-center px-4 pb-4 border-b border-surface-light bg-surface"
+        >
+          <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2">
+            <Ionicons name="chevron-back" size={24} color="white" />
+          </TouchableOpacity>
 
-        <View className="flex-row items-center flex-1 ml-2">
-          <View className="relative">
-            {getAvatarUrl(avatar as string) ? (
-              <Image
-                source={getAvatarUrl(avatar as string)!}
-                className="w-10 h-10 rounded-full"
-              />
-            ) : (
-              <View className="w-10 h-10 rounded-full bg-surface-card border border-surface-light items-center justify-center">
-                <Ionicons name="person" size={20} color="#6B6B70" />
-              </View>
-            )}
-            <View className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-surface" />
+          <View className="flex-row items-center flex-1 ml-2">
+            <View className="relative">
+              {getAvatarUrl(avatar as string) ? (
+                <Image
+                  source={getAvatarUrl(avatar as string)!}
+                  className="w-10 h-10 rounded-full"
+                />
+              ) : (
+                <View className="w-10 h-10 rounded-full bg-surface-card border border-surface-light items-center justify-center">
+                  <Ionicons name="person" size={20} color="#6B6B70" />
+                </View>
+              )}
+              <View className="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-green-500 border-2 border-surface" />
+            </View>
+            <View className="ml-3">
+              <Text className="text-white font-bold text-base">{name}</Text>
+              <Text className="text-green-500 text-[10px] font-medium">
+                Online
+              </Text>
+            </View>
           </View>
-          <View className="ml-3">
-            <Text className="text-white font-bold text-base">{name}</Text>
-            <Text className="text-green-500 text-[10px] font-medium">
-              Online
-            </Text>
-          </View>
+
+          <TouchableOpacity className="p-2">
+            <Ionicons name="ellipsis-vertical" size={20} color="#6B6B70" />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity className="p-2">
-          <Ionicons name="ellipsis-vertical" size={20} color="#6B6B70" />
-        </TouchableOpacity>
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        className="flex-1"
-        keyboardVerticalOffset={Platform.OS === "ios" ? insets.top + 60 : 0}
-      >
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -141,7 +141,7 @@ export default function ChatScreen() {
             flatListRef.current?.scrollToEnd({ animated: true })
           }
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
-          keyboardShouldPersistTaps="never"
+          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         />
 

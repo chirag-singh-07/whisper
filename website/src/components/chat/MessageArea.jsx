@@ -224,8 +224,8 @@ export default function ChatArea({
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100%-3rem)] sm:max-w-[70%] min-w-0 flex-1`}>
-                        <div className={`px-5 py-4 rounded-[26px] shadow-2xl w-full ${isMe ? 'bg-primary text-white rounded-br-none shadow-primary/10' : 'bg-[#1A1A1C] border border-white/5 text-white rounded-bl-none shadow-black/50'}`}>
+                      <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[calc(100%-3rem)] sm:max-w-[70%] min-w-0`}>
+                        <div className={`px-5 py-4 rounded-[26px] shadow-2xl ${isMe ? 'bg-primary text-white rounded-br-none shadow-primary/10' : 'bg-[#1A1A1C] border border-white/5 text-white rounded-bl-none shadow-black/50'}`}>
                           <p className="text-[15px] leading-relaxed font-medium selection:bg-black/20 break-words whitespace-pre-wrap">{m.text}</p>
                         </div>
                         <div className="flex items-center gap-2 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity">

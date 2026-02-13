@@ -11,7 +11,7 @@ const getAvatar = (uri: string) => {
   if (!uri) return "https://ui-avatars.com/api/?background=random";
   if (uri.startsWith("http")) return uri;
   // Replace with your local machine IP
-  return `http://192.168.1.5:5000${uri}`;
+  return `http://192.168.1.13:5000${uri}`;
 };
 
 export default function Requests() {

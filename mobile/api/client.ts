@@ -7,9 +7,9 @@ const getBaseUrl = () => {
   // For iOS Simulator, use localhost
   // For physical device, replace with your LAN IP
   if (Platform.OS === "android") {
-    return "http://192.168.1.4:5000/api";
+    return "http://192.168.1.13:5000/api";
   }
-  return "http://localhost:5000/api";
+  return "http://192.168.1.13:5000/api";
 };
 
 export const BASE_URL = getBaseUrl();

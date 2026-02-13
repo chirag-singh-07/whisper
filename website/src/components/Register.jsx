@@ -7,6 +7,30 @@ import { Input } from '@/components/ui/input';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
+// Move InputField outside to prevent re-creation on every render
+const InputField = ({ label, error, icon: Icon, ...props }) => (
+   <div className="space-y-2">
+      <div className="flex justify-between items-center bg-transparent">
+         <label className="text-[11px] uppercase font-bold text-muted-foreground/60 tracking-[0.2em] pl-1 transition-colors hover:text-muted-foreground cursor-pointer">{label}</label>
+         {error && <span className="text-[11px] text-destructive font-bold animate-in slide-in-from-right-2 fade-in">{error}</span>}
+      </div>
+      <div className="relative group">
+         <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${error ? 'text-destructive' : 'text-muted-foreground/50 group-focus-within:text-primary group-hover:text-muted-foreground'}`}>
+            <Icon size={18} />
+         </div>
+         <input 
+            {...props}
+            className={`w-full h-14 pl-12 bg-white/[0.03] border backdrop-blur-sm rounded-2xl text-white outline-none transition-all duration-300 placeholder:text-white/10
+               ${error 
+                  ? 'border-destructive/50 focus:border-destructive focus:ring-4 focus:ring-destructive/10' 
+                  : 'border-white/5 hover:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/10 hover:bg-white/[0.06]'
+               }`}
+         />
+         <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5 pointer-events-none" />
+      </div>
+   </div>
+);
+
 export default function Register() {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
@@ -122,29 +146,6 @@ export default function Register() {
       setLoading(false);
     }
   };
-
-  const InputField = ({ label, error, icon: Icon, ...props }) => (
-     <div className="space-y-2">
-        <div className="flex justify-between items-center bg-transparent">
-           <label className="text-[11px] uppercase font-bold text-muted-foreground/60 tracking-[0.2em] pl-1 transition-colors hover:text-muted-foreground cursor-pointer">{label}</label>
-           {error && <span className="text-[11px] text-destructive font-bold animate-in slide-in-from-right-2 fade-in">{error}</span>}
-        </div>
-        <div className="relative group">
-           <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors duration-300 ${error ? 'text-destructive' : 'text-muted-foreground/50 group-focus-within:text-primary group-hover:text-muted-foreground'}`}>
-              <Icon size={18} />
-           </div>
-           <input 
-              {...props}
-              className={`w-full h-14 pl-12 bg-white/[0.03] border backdrop-blur-sm rounded-2xl text-white outline-none transition-all duration-300 placeholder:text-white/10
-                 ${error 
-                    ? 'border-destructive/50 focus:border-destructive focus:ring-4 focus:ring-destructive/10' 
-                    : 'border-white/5 hover:border-white/10 focus:border-primary focus:ring-4 focus:ring-primary/10 hover:bg-white/[0.06]'
-                 }`}
-           />
-           <div className="absolute inset-0 rounded-2xl ring-1 ring-inset ring-white/5 pointer-events-none" />
-        </div>
-     </div>
-  );
 
   return (
     <div className="min-h-screen w-full flex bg-background text-foreground selection:bg-primary/30">

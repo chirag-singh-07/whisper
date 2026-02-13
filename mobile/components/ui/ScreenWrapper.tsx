@@ -36,7 +36,10 @@ export default function ScreenWrapper({
   }
 
   return (
-    <View className="flex-1 bg-surface" style={[{ paddingTop }, style]}>
+    <View
+      className="flex-1 bg-surface"
+      style={[{ paddingTop }, { flex: 1 }, style]}
+    >
       <StatusBar barStyle="light-content" backgroundColor="#1A1A1D" />
       {children}
     </View>
