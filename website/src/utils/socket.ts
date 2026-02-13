@@ -1,11 +1,11 @@
 import { io, type Socket } from "socket.io-client";
+import { SOCKET_URL } from "./api";
 
 let socket: Socket | null = null;
 
 export function initializeSocket(token: string, url?: string) {
   if (socket) return socket;
-  const baseUrl =
-    url || (import.meta.env.VITE_API_URL as string) || "http://localhost:5000";
+  const baseUrl = url || SOCKET_URL;
 
   socket = io(baseUrl, {
     auth: { token },

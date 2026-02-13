@@ -79,5 +79,6 @@ export const useChat = (chatId) => {
     error,
     sendMessage,
     refresh: fetchMessages,
+    setMessages,
   };
 };

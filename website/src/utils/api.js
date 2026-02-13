@@ -1,6 +1,9 @@
 import axios from "axios";
-
-export const BASE_URL = "http://localhost:5000/api"; // Adjust if backend is on different port
+const vApiUrl = import.meta.env.VITE_API_URL;
+const API_URL =
+  vApiUrl && vApiUrl !== "undefined" ? vApiUrl : "http://localhost:5000";
+export const SOCKET_URL = API_URL;
+export const BASE_URL = `${API_URL}/api`;
 
 const api = axios.create({
   baseURL: BASE_URL,

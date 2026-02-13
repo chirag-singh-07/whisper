@@ -22,7 +22,11 @@ const app = express();
  * Security Middleware
  */
 // Helmet sets various HTTP headers for security
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 
 // CORS configuration
 app.use(

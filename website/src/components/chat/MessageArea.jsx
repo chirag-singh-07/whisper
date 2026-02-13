@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import EmojiPicker from "emoji-picker-react";
 import { motion, AnimatePresence } from "framer-motion";
+import api, { SOCKET_URL } from "../../utils/api";
 import {
   Phone,
   Video,
@@ -40,6 +41,8 @@ export default function ChatArea({
   handleSend,
   sending,
   messagesEndRef,
+  onBack,
+  setMessages,
 }) {
   const socket = useSocket();
   const [isTyping, setIsTyping] = useState(false);
@@ -113,59 +116,127 @@ export default function ChatArea({
   const [uploading, setUploading] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [filePreview, setFilePreview] = useState(null);
+
+  const removePreview = () => {
+    if (filePreview?.url) {
+      URL.revokeObjectURL(filePreview.url);
+    }
+    setFilePreview(null);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+    if (docInputRef.current) docInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
+    if (audioInputRef.current) audioInputRef.current.value = "";
+  };
 
   const onEmojiClick = (emojiData) => {
     setMessageText((prev) => prev + emojiData.emoji);
     // Optional: setShowEmojiPicker(false); // Prefer keeping open for multiple
   };
 
-  const handleFileUpload = async (e) => {
+  const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setShowAttachMenu(false); // Close menu on selection
+    setShowAttachMenu(false);
+
+    // Create preview
+    const url = URL.createObjectURL(file);
+    const type = file.type.startsWith("image/")
+      ? "image"
+      : file.type.startsWith("video/")
+        ? "video"
+        : file.type.startsWith("audio/")
+          ? "audio"
+          : "file";
+
+    setFilePreview({
+      file,
+      url,
+      type,
+      name: file.name,
+    });
+  };
+
+  const uploadAndSend = async () => {
+    if (!filePreview || !activeChat) return;
+
+    // Optimistic Update
+    const tempId = `temp-${Date.now()}`;
+    const previewUrl = filePreview.url; // Keep reference
+    const tempMsg = {
+      _id: tempId,
+      chat: activeChat._id,
+      sender: {
+        _id: user.id || user._id,
+        name: user.name,
+        avatarUrl: user.avatarUrl,
+      },
+      text: messageText || filePreview.name,
+      type: filePreview.type,
+      mediaUrl: previewUrl, // Use blob URL
+      mediaMeta: { size: filePreview.file.size },
+      createdAt: new Date().toISOString(),
+      isTemp: true,
+    };
+
+    // Add temp message
+    setMessages((prev) => [...prev, tempMsg]);
+
+    // Clear UI but don't revoke URL yet
+    const textToSend = messageText;
+    setFilePreview(null);
+    setMessageText("");
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("file", filePreview.file);
 
     try {
-      const token = localStorage.getItem("accessToken");
-      const endpoint = import.meta.env.VITE_API_URL + "/api/upload"; // Corrected endpoint
-
-      const response = await fetch(endpoint, {
-        method: "POST",
+      const { data } = await api.post("/upload", formData, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-        body: formData,
       });
 
-      const data = await response.json();
-
       if (data.success) {
-        const type = file.type.startsWith("image/") ? "image" : "file";
+        const messageData = {
+          chatId: activeChat._id,
+          type: filePreview.type,
+          text: textToSend || filePreview.name,
+          mediaUrl: data.data.url,
+          mediaMeta: {
+            size: data.data.size,
+            mimeType: data.data.mimetype,
+          },
+        };
 
-        if (activeChat && socket) {
-          const messageData = {
-            chatId: activeChat._id,
-            type: type,
-            text: file.name,
-            mediaUrl: data.data.url,
-            mediaMeta: {
-              size: data.data.size,
-              mimeType: data.data.mimetype,
-            },
-          };
+        socket.emit("message:send", messageData);
 
-          socket.emit("send_message", messageData);
-        }
+        // Remove temp message (Socket will verify real one)
+        setMessages((prev) => prev.filter((m) => m._id !== tempId));
+        URL.revokeObjectURL(previewUrl);
+      } else {
+        // Upload failed
+        setMessages((prev) => prev.filter((m) => m._id !== tempId));
+        console.error("Upload failed", data);
       }
     } catch (error) {
       console.error("Upload failed:", error);
+      setMessages((prev) => prev.filter((m) => m._id !== tempId));
     } finally {
       setUploading(false);
-      e.target.value = "";
+    }
+  };
+
+  const onSend = (e) => {
+    if (e) e.preventDefault();
+    if ((!messageText.trim() && !filePreview) || sending || uploading) return;
+
+    if (filePreview) {
+      uploadAndSend();
+    } else {
+      handleSend(e);
     }
   };
 
@@ -323,7 +394,7 @@ export default function ChatArea({
                   </span>
                 </div>
                 {messages.map((m) => {
-                  const isMe = m.sender._id === user.id;
+                  const isMe = m.sender._id === (user.id || user._id);
                   return (
                     <motion.div
                       initial={{ opacity: 0, y: 15, scale: 0.98 }}
@@ -351,10 +422,26 @@ export default function ChatArea({
                           {m.type === "image" ? (
                             <div className="rounded-xl overflow-hidden mb-1">
                               <img
-                                src={import.meta.env.VITE_API_URL + m.mediaUrl}
+                                src={
+                                  m.mediaUrl?.startsWith("blob:")
+                                    ? m.mediaUrl
+                                    : SOCKET_URL + m.mediaUrl
+                                }
                                 alt="Shared image"
                                 className="max-w-full h-auto max-h-[300px] object-cover"
                                 loading="lazy"
+                              />
+                            </div>
+                          ) : m.type === "video" ? (
+                            <div className="rounded-xl overflow-hidden mb-1 bg-black/20">
+                              <video
+                                src={
+                                  m.mediaUrl?.startsWith("blob:")
+                                    ? m.mediaUrl
+                                    : SOCKET_URL + m.mediaUrl
+                                }
+                                controls
+                                className="max-w-full h-auto max-h-[300px] object-cover"
                               />
                             </div>
                           ) : m.type === "file" ? (
@@ -371,7 +458,11 @@ export default function ChatArea({
                                 </p>
                               </div>
                               <a
-                                href={import.meta.env.VITE_API_URL + m.mediaUrl}
+                                href={
+                                  m.mediaUrl?.startsWith("blob:")
+                                    ? m.mediaUrl
+                                    : SOCKET_URL + m.mediaUrl
+                                }
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="ml-auto p-2 hover:bg-white/10 rounded-lg transition-colors"
@@ -393,6 +484,16 @@ export default function ChatArea({
                             m.text !== "Image" && (
                               <p className="text-sm mt-1">{m.text}</p>
                             )}
+
+                          {/* Sending Overlay for Temp Messages */}
+                          {m.isTemp && (
+                            <div className="absolute inset-0 bg-black/60 rounded-[26px] z-20 flex items-center justify-center backdrop-blur-[1px]">
+                              <Loader2
+                                className="animate-spin text-white/80"
+                                size={24}
+                              />
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mt-2 px-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <span className="text-[9px] font-black uppercase tracking-tighter text-muted-foreground/60">
@@ -471,8 +572,74 @@ export default function ChatArea({
         {/* Input Container */}
         <div className="p-8 pt-0">
           <div className="max-w-5xl mx-auto">
+            {/* File Preview */}
+            <AnimatePresence>
+              {filePreview && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: 10, height: 0 }}
+                  className="w-full px-1 pb-2 relative z-10"
+                >
+                  <div className="relative bg-[#1A1A1C] border border-white/10 rounded-2xl p-2 flex items-center gap-4 shadow-xl overflow-hidden">
+                    {/* Preview Content based on type */}
+                    {filePreview.type === "image" ? (
+                      <img
+                        src={filePreview.url}
+                        alt="Preview"
+                        className="h-16 w-16 rounded-xl object-cover border border-white/5"
+                      />
+                    ) : filePreview.type === "video" ? (
+                      <video
+                        src={filePreview.url}
+                        className="h-16 w-16 rounded-xl object-cover border border-white/5"
+                        muted
+                      />
+                    ) : (
+                      <div className="h-16 w-16 bg-white/5 rounded-xl flex items-center justify-center border border-white/5">
+                        <FileText size={24} className="text-primary" />
+                      </div>
+                    )}
+
+                    <div className="flex-1 min-w-0 py-1">
+                      <p className="text-sm font-bold text-white truncate pr-8">
+                        {filePreview.name}
+                      </p>
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        {(filePreview.file.size / 1024 / 1024).toFixed(2)} MB •{" "}
+                        {filePreview.type}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={removePreview}
+                      type="button"
+                      className="absolute top-2 right-2 p-1.5 bg-white/5 hover:bg-red-500/20 hover:text-red-400 rounded-full text-muted-foreground transition-all"
+                    >
+                      <X size={14} />
+                    </button>
+
+                    {/* Upload Progress Overlay */}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-[#0A0A0B]/80 backdrop-blur-sm flex items-center justify-center z-20">
+                        <div className="flex items-center gap-3">
+                          <Loader2
+                            className="animate-spin text-primary"
+                            size={18}
+                          />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white">
+                            Uploading...
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <form
-              onSubmit={handleSend}
+              onSubmit={onSend}
               className="relative flex items-end gap-3 bg-[#111113]/80 border border-white/10 p-2.5 pl-4 rounded-[30px] shadow-2xl backdrop-blur-2xl focus-within:border-primary/30 transition-all group"
             >
               {/* Attachment Menu */}
@@ -595,21 +762,21 @@ export default function ChatArea({
                 type="file"
                 ref={imageInputRef}
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleFileSelect}
                 accept="image/*,video/*"
               />
               <input
                 type="file"
                 ref={docInputRef}
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleFileSelect}
                 accept=".pdf,.doc,.docx,.txt,.xls,.xlsx"
               />
               <input
                 type="file"
                 ref={cameraInputRef}
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleFileSelect}
                 accept="image/*"
                 capture="environment"
               />
@@ -617,7 +784,7 @@ export default function ChatArea({
                 type="file"
                 ref={audioInputRef}
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleFileSelect}
                 accept="audio/*"
               />
 
@@ -668,7 +835,7 @@ export default function ChatArea({
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    handleSend(e);
+                    onSend(e);
                   }
                 }}
                 onClick={() => {
@@ -690,7 +857,7 @@ export default function ChatArea({
                 <Button
                   type="submit"
                   disabled={!messageText.trim() || sending}
-                  className={`h-11 w-11 rounded-2xl shadow-xl shadow-primary/20 p-0 transition-all ${messageText.trim() ? "bg-primary scale-100" : "bg-muted/10 scale-95 opacity-50"}`}
+                  className={`h-11 w-11 rounded-2xl shadow-xl shadow-primary/20 p-0 transition-all ${messageText.trim() ? "bg-primary scale-100 text-black" : "bg-muted/10 scale-95 opacity-50 text-primary"}`}
                 >
                   {sending ? (
                     <Loader2 className="animate-spin" size={18} />

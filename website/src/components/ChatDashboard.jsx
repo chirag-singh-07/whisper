@@ -19,6 +19,7 @@ export default function ChatDashboard() {
     loading: msgsLoading,
     sending,
     sendMessage,
+    setMessages,
   } = useChat(activeChat?._id);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,6 +130,8 @@ export default function ChatDashboard() {
         handleSend={handleSend}
         sending={sending}
         messagesEndRef={messagesEndRef}
+        onBack={() => setActiveChat(null)}
+        setMessages={setMessages}
       />
 
       <AnimatePresence>
