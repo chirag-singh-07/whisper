@@ -32,10 +32,10 @@ export const useChat = (chatId) => {
       // For now, let's wait for socket event to prevent duplicate if needed,
       // OR optimistically update. Hybrid approach: API returns message, we append it.
       // And we filter duplicates in the socket listener.
-      const isDuplicate = messages.some((m) => m._id === data.message._id);
-      if (!isDuplicate) {
-        setMessages((prev) => [...prev, data.message]);
-      }
+      setMessages((prev) => {
+        if (prev.some((m) => m._id === data.message._id)) return prev;
+        return [...prev, data.message];
+      });
       return data.message;
     } catch (err) {
       setError(err.message || "Failed to send message");

@@ -1,32 +1,37 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useChats } from '../hooks/useChats';
-import { useChat } from '../hooks/useChat';
-import api, { BASE_URL } from '../utils/api';
-import { AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
-import LoadingScreen from './ui/LoadingScreen';
+import React, { useState, useEffect, useRef } from "react";
+import { useChats } from "../hooks/useChats";
+import { useChat } from "../hooks/useChat";
+import api, { BASE_URL } from "../utils/api";
+import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import LoadingScreen from "./ui/LoadingScreen";
 
 // Refactored Components
-import Sidebar from './chat/Sidebar';
-import MessageArea from './chat/MessageArea';
-import UserDossier from './chat/UserDossier';
+import Sidebar from "./chat/Sidebar";
+import MessageArea from "./chat/MessageArea";
+import UserDossier from "./chat/UserDossier";
 
 export default function ChatDashboard() {
   const { chats, loading: chatsLoading, refresh: refreshChats } = useChats();
   const [activeChat, setActiveChat] = useState(null);
-  const { messages, loading: msgsLoading, sending, sendMessage } = useChat(activeChat?._id);
-  
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    messages,
+    loading: msgsLoading,
+    sending,
+    sendMessage,
+  } = useChat(activeChat?._id);
+
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
-  const [messageText, setMessageText] = useState('');
+  const [messageText, setMessageText] = useState("");
   const [showDossier, setShowDossier] = useState(true);
-  
+
   const messagesEndRef = useRef(null);
-  
+
   // Safe JSON parse for user data
-  const userStr = localStorage.getItem('user');
-  const user = (userStr && userStr !== 'undefined') ? JSON.parse(userStr) : {};
+  const userStr = localStorage.getItem("user");
+  const user = userStr && userStr !== "undefined" ? JSON.parse(userStr) : {};
 
   useEffect(() => {
     if (activeChat) setShowDossier(true);
@@ -69,7 +74,7 @@ export default function ChatDashboard() {
     try {
       const { data } = await api.post(`/chats/with/${participant._id}`);
       setActiveChat(data.chat);
-      setSearchQuery('');
+      setSearchQuery("");
       setSearchResults([]);
       refreshChats();
     } catch (err) {
@@ -82,7 +87,7 @@ export default function ChatDashboard() {
     if (!messageText.trim() || sending) return;
     try {
       await sendMessage(messageText);
-      setMessageText('');
+      setMessageText("");
       refreshChats();
     } catch (err) {
       toast.error("Message could not be sent");
@@ -91,14 +96,13 @@ export default function ChatDashboard() {
 
   const getAvatar = (uri) => {
     if (!uri) return null;
-    if (uri.startsWith('http')) return uri;
-    return `${BASE_URL.replace('/api', '')}${uri}`;
+    if (uri.startsWith("http")) return uri;
+    return `${BASE_URL.replace("/api", "")}${uri}`;
   };
 
   return (
     <div className="h-screen w-full flex bg-[#0A0A0B] text-white overflow-hidden selection:bg-primary/30 selection:text-primary">
-      
-      <Sidebar 
+      <Sidebar
         user={user}
         chats={chats}
         chatsLoading={chatsLoading}
@@ -112,7 +116,7 @@ export default function ChatDashboard() {
         getAvatar={getAvatar}
       />
 
-      <MessageArea 
+      <MessageArea
         activeChat={activeChat}
         messages={messages}
         msgsLoading={msgsLoading}
@@ -129,7 +133,7 @@ export default function ChatDashboard() {
 
       <AnimatePresence>
         {activeChat && showDossier && (
-          <UserDossier 
+          <UserDossier
             activeChat={activeChat}
             getAvatar={getAvatar}
             setShowDetails={setShowDossier}
